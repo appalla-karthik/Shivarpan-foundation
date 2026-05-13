@@ -9,6 +9,8 @@ interface ProjectFundingActionsProps {
   donateLabel?: string;
   className?: string;
   compact?: boolean;
+  donateWide?: boolean;
+  donateFirst?: boolean;
 }
 
 const getProjectShareUrl = (slug: string) => {
@@ -34,6 +36,8 @@ const ProjectFundingActions = ({
   donateLabel = "Donate Now",
   className,
   compact = false,
+  donateWide = false,
+  donateFirst = false,
 }: ProjectFundingActionsProps) => {
   const shareText = `Support Shivarpan Foundation's project: ${title}. Donate or share here: ${getProjectShareUrl(slug)}`;
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
@@ -45,8 +49,9 @@ const ProjectFundingActions = ({
         asChild
         variant="outline"
         className={cn(
-          "group relative overflow-hidden rounded-2xl border border-[#18d978]/55 bg-[linear-gradient(135deg,#ffffff_0%,#f4fff9_48%,#ecfff6_100%)] font-bold text-[#059654] shadow-[0_16px_42px_-28px_rgba(8,168,91,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#10c969] hover:bg-[linear-gradient(135deg,#ffffff_0%,#ecfff6_42%,#dffded_100%)] hover:text-[#047a45] hover:shadow-[0_22px_52px_-26px_rgba(8,168,91,0.95)]",
+          "group relative w-full overflow-hidden rounded-2xl border border-[#18d978]/55 bg-[linear-gradient(135deg,#ffffff_0%,#f4fff9_48%,#ecfff6_100%)] font-bold text-[#059654] shadow-[0_16px_42px_-28px_rgba(8,168,91,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#10c969] hover:bg-[linear-gradient(135deg,#ffffff_0%,#ecfff6_42%,#dffded_100%)] hover:text-[#047a45] hover:shadow-[0_22px_52px_-26px_rgba(8,168,91,0.95)]",
           compact ? "h-11 px-4 text-sm" : "h-12 px-5 text-base",
+          donateFirst && "order-2",
         )}
       >
         <a
@@ -67,8 +72,10 @@ const ProjectFundingActions = ({
       <Button
         asChild
         className={cn(
-          "group relative overflow-hidden rounded-2xl border border-white/20 bg-[linear-gradient(135deg,#15c7c7_0%,#08a8b4_46%,#057f98_100%)] font-bold text-white shadow-[0_18px_46px_-22px_rgba(8,168,180,0.95)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#20d6d2_0%,#0bb5bf_48%,#0789a2_100%)] hover:shadow-[0_24px_60px_-24px_rgba(8,168,180,1)]",
+          "group relative w-full overflow-hidden rounded-2xl border border-white/20 bg-[linear-gradient(135deg,#15c7c7_0%,#08a8b4_46%,#057f98_100%)] font-bold text-white shadow-[0_18px_46px_-22px_rgba(8,168,180,0.95)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#20d6d2_0%,#0bb5bf_48%,#0789a2_100%)] hover:shadow-[0_24px_60px_-24px_rgba(8,168,180,1)]",
           compact ? "h-11 px-4 text-sm" : "h-12 px-5 text-base",
+          donateWide && "sm:col-span-2 2xl:col-span-1 2xl:min-w-[13.5rem]",
+          donateFirst && "order-1",
         )}
       >
         <Link to={donateHref} aria-label={`${donateLabel} for ${title}`}>

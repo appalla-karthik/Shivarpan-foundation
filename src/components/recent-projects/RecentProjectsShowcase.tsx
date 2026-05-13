@@ -308,7 +308,7 @@ const RecentProjectsShowcase = ({
                     <ProjectFundingActions
                       title={featuredProject.title}
                       slug={featuredProject.slug}
-                      donateLabel="Contribute"
+                      donateLabel="Donate Now"
                       className="mt-5"
                     />
                   </div>
@@ -612,7 +612,7 @@ const RecentProjectsShowcase = ({
               </p>
             </motion.div>
 
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="mx-auto grid max-w-[86rem] gap-5 xl:grid-cols-2">
               {activeProjects.map((project, index) => {
                 const remaining = Math.max(project.budget - project.spent, 0);
                 const utilization = getUtilizationPercent(project.spent, project.budget);
@@ -626,8 +626,8 @@ const RecentProjectsShowcase = ({
                     transition={{ duration: 0.45, delay: index * 0.06 }}
                     className="overflow-hidden rounded-[2rem] border border-border/80 bg-card/96 shadow-[0_28px_84px_-56px_hsl(var(--foreground))]"
                   >
-                    <div className="grid gap-0 md:grid-cols-[1fr_auto]">
-                      <div className="p-6">
+                    <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(205px,0.36fr)]">
+                      <div className="p-6 md:p-7">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
@@ -685,12 +685,13 @@ const RecentProjectsShowcase = ({
                         <ProjectFundingActions
                           title={project.title}
                           slug={project.slug}
-                          donateLabel="Contribute"
-                          className="mt-5 max-w-xl"
+                          donateLabel="Donate Now"
+                          className="mt-6 max-w-none grid-cols-1"
+                          donateFirst
                         />
                       </div>
 
-                      <div className="grid min-w-[220px] content-between border-t border-border/75 bg-[linear-gradient(180deg,hsl(var(--primary)/0.08)_0%,transparent_100%)] p-5 md:border-l md:border-t-0">
+                      <div className="grid content-between border-t border-border/75 bg-[linear-gradient(180deg,hsl(var(--primary)/0.08)_0%,transparent_100%)] p-5 md:border-l md:border-t-0">
                         <div className="space-y-3">
                           <div className="rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
