@@ -6,7 +6,6 @@ import {
   Calendar,
   CircleDollarSign,
   Handshake,
-  Heart,
   MapPin,
   Sparkles,
   Target,
@@ -14,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ProjectFundingActions from "@/components/ProjectFundingActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -305,17 +305,12 @@ const RecentProjectsShowcase = ({
                       </div>
                     </div>
 
-                    <Button
-                      asChild
-                      className="mt-5 w-full gap-2 rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
-                      <Link
-                        to={`/donate-now?project=${encodeURIComponent(featuredProject.slug)}`}
-                      >
-                        <Heart className="h-4 w-4" />
-                        Donate To This Project
-                      </Link>
-                    </Button>
+                    <ProjectFundingActions
+                      title={featuredProject.title}
+                      slug={featuredProject.slug}
+                      donateLabel="Contribute"
+                      className="mt-5"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -578,23 +573,13 @@ const RecentProjectsShowcase = ({
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                             {isActive ? "Direct project funding open" : "Completed chapter support"}
                           </p>
-                          <div className="flex flex-wrap gap-2.5">
-                        <Button
-                          asChild
-                          className="h-10 gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                          <Link to={`/donate-now?project=${encodeURIComponent(project.slug)}`}>
-                            <Heart className="h-4 w-4" />
-                            {isActive ? "Donate To Project" : "Support Similar Work"}
-                          </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="h-10 gap-2 rounded-full">
-                          <Link to="/contact">
-                            Partner On This
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                          </div>
+                          <ProjectFundingActions
+                            title={project.title}
+                            slug={project.slug}
+                            donateLabel={isActive ? "Donate Now" : "Support Similar Work"}
+                            compact
+                            className="w-full sm:w-auto sm:min-w-[22rem]"
+                          />
                         </div>
                       </div>
                     </div>
@@ -697,20 +682,12 @@ const RecentProjectsShowcase = ({
                           />
                         </div>
 
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          <Button asChild className="gap-2 rounded-full">
-                            <Link to={`/donate-now?project=${encodeURIComponent(project.slug)}`}>
-                              <Heart className="h-4 w-4" />
-                              Donate To This Project
-                            </Link>
-                          </Button>
-                          <Button asChild variant="outline" className="gap-2 rounded-full">
-                            <Link to="/donate-now">
-                              Support Broadly
-                              <ArrowRight className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
+                        <ProjectFundingActions
+                          title={project.title}
+                          slug={project.slug}
+                          donateLabel="Contribute"
+                          className="mt-5 max-w-xl"
+                        />
                       </div>
 
                       <div className="grid min-w-[220px] content-between border-t border-border/75 bg-[linear-gradient(180deg,hsl(var(--primary)/0.08)_0%,transparent_100%)] p-5 md:border-l md:border-t-0">

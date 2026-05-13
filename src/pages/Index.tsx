@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
 import ImpactCounter from "@/components/ImpactCounter";
 import CinematicImpactStory from "@/components/CinematicImpactStory";
+import ProjectFundingActions from "@/components/ProjectFundingActions";
 import aboutHero from "@/assets/about-hero.png";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
@@ -33,6 +34,11 @@ import adrsKLogo from "@/assets/ADRSK.png";
 import shivarpanLogo from "@/assets/shivarpan-logo.jpeg";
 import hotelLogo from "@/assets/hotel.png";
 import { aboutContent, homeHeroContent } from "@/data/siteContent";
+import {
+  mapRecentProjectsFromApi,
+  type RecentProject,
+  type RecentProjectsApiItem,
+} from "@/data/recentProjects";
 import { assetUrl, getJson, reportApiError } from "@/lib/api";
 
 const heroStats = [
@@ -111,37 +117,6 @@ const stories = [
   },
 ];
 
-const projects = [
-  {
-    title: "Winter Food Relief for 500 Families",
-    category: "Food Security",
-    raised: 180000,
-    goal: 180000,
-    image: campaignFood,
-  },
-  {
-    title: "Back-to-School Kits for 1200 Students",
-    category: "Education",
-    raised: 220000,
-    goal: 220000,
-    image: campaignEducation,
-  },
-  {
-    title: "Rural Health Screening Camp - Nashik",
-    category: "Healthcare",
-    raised: 252000,
-    goal: 260000,
-    image: campaignHealth,
-  },
-  {
-    title: "Urban Tree Belt Restoration",
-    category: "Environment",
-    raised: 125500,
-    goal: 140000,
-    image: campaignEnvironment,
-  },
-];
-
 const awards = [
   {
     year: "2025",
@@ -168,6 +143,14 @@ const episodes = [
 
 const partners = [
   {
+    name: "Shivora Events",
+    focus: "Event Partner",
+    tag: "Events",
+    monogram: "SE",
+    glow: "from-accent/20 via-primary/10 to-transparent",
+    url: "#",
+  },
+  {
     name: "Zorsk Digital Marketing",
     focus: "Marketing Partner",
     tag: "Marketing",
@@ -191,15 +174,6 @@ const partners = [
     tag: "Foundation",
     monogram: "SF",
     glow: "from-accent/20 via-primary/10 to-transparent",
-    logoUrl: shivarpanLogo,
-  },
-  {
-    name: "Aura Event Studio",
-    focus: "Event Partner",
-    tag: "Events Partner",
-    monogram: "Events",
-    glow: "from-primary/15 via-accent/10 to-transparent",
-    url: "https://eventflow-6ymx.onrender.com/",
   },
 ];
 
@@ -255,11 +229,15 @@ type StoryItemPayload = {
   image: string | null;
 };
 
-type ProjectPayload = {
-  id: number;
+type ProjectPayload = RecentProjectsApiItem;
+
+type HomepageProjectCard = {
   title: string;
   slug: string;
-  featured_image: MediaAsset | null;
+  category: string;
+  raised: number;
+  goal: number;
+  image: string;
 };
 
 type HomepagePayload = {
@@ -313,6 +291,18 @@ const quickAccessLinks = [
 ];
 
 const formatCurrency = (value: number) => `Rs ${value.toLocaleString("en-IN")}`;
+const transformProjectsForHomepage = (
+  projects: RecentProject[],
+): HomepageProjectCard[] =>
+  projects.slice(0, 4).map((project) => ({
+    title: project.title,
+    slug: project.slug,
+    category: project.focus,
+    raised: project.spent,
+    goal: project.budget,
+    image: project.image,
+  }));
+
 const sectionTagClass =
   "inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary";
 const sectionTitleClass = "mt-3 font-display text-2xl font-bold text-foreground sm:text-3xl md:text-4xl";
@@ -474,29 +464,26 @@ const Index = () => {
     [storyItems],
   );
 
+  const normalizedRecentProjects = useMemo(
+    () => mapRecentProjectsFromApi(projectItems.length > 0 ? projectItems : null),
+    [projectItems],
+  );
+
   const projectsData = useMemo(() => {
-    if (!projectItems.length) {
-      return projects;
-    }
-
-    const normalizeKey = (value: string) => value.trim().toLowerCase();
-    const mapByTitle = new Map(
-      projectItems.map((item) => [normalizeKey(item.title || ""), item]),
-    );
-
-    return projects.map((project, index) => {
-      const match = mapByTitle.get(normalizeKey(project.title)) || projectItems[index];
-      const image = assetUrl(match?.featured_image?.url) || project.image;
-      return { ...project, image };
-    });
-  }, [projectItems]);
+    return transformProjectsForHomepage(normalizedRecentProjects);
+  }, [normalizedRecentProjects]);
 
   const totalRaised = projectsData.reduce((sum, project) => sum + project.raised, 0);
   const totalGoal = projectsData.reduce((sum, project) => sum + project.goal, 0);
   const completionRate = totalGoal === 0 ? 0 : Math.round((totalRaised / totalGoal) * 100);
   const fullyFunded = projectsData.filter((project) => project.raised >= project.goal).length;
   const featuredProject = projectsData[0];
-  const featuredProgress = Math.min((featuredProject.raised / featuredProject.goal) * 100, 100);
+  const featuredProgress = featuredProject && featuredProject.goal > 0
+    ? Math.min((featuredProject.raised / featuredProject.goal) * 100, 100)
+    : 0;
+  const featuredShortfall = featuredProject
+    ? Math.max(featuredProject.goal - featuredProject.raised, 0)
+    : 0;
 
   const testimonialsToShow = useMemo(() => {
     if (homepage && homepage.show_testimonials === false) {
@@ -663,6 +650,239 @@ const Index = () => {
         >
           <ChevronRight className="w-6 h-6 rotate-90" />
         </motion.div>
+      </section>
+
+      {/* Recent Projects - Impact Dashboard */}
+      <section className="relative overflow-hidden py-16 md:py-24">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,hsl(var(--primary)/0.1),transparent_40%),radial-gradient(circle_at_86%_80%,hsl(var(--accent)/0.12),transparent_42%)]" />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, 20, 0], y: [0, -12, 0], opacity: [0.12, 0.28, 0.12] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute -top-20 right-8 h-72 w-72 rounded-full bg-primary/25 blur-3xl"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ x: [0, -18, 0], y: [0, 15, 0], opacity: [0.1, 0.24, 0.1] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute -bottom-20 left-10 h-72 w-72 rounded-full bg-accent/25 blur-3xl"
+        />
+
+        <div className="container relative z-10 mx-auto px-4">
+          <AnimatedSection className="mb-8 md:mb-10">
+            <div className="relative overflow-hidden rounded-[2.2rem] border border-border/85 bg-[linear-gradient(135deg,hsl(var(--card)/0.96)_0%,hsl(var(--background)/0.92)_48%,hsl(var(--primary)/0.08)_100%)] p-5 shadow-[0_34px_95px_-58px_hsl(var(--foreground))] backdrop-blur-sm md:p-7">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-accent/18 blur-3xl" />
+              <div className="pointer-events-none absolute bottom-0 left-1/3 h-24 w-56 rounded-full bg-primary/12 blur-3xl" />
+              <div className="flex flex-wrap items-end justify-between gap-5">
+                <div className="max-w-2xl">
+                  <span className={sectionTagClass}>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Recent Projects
+                  </span>
+                  <h2 className={sectionTitleClass}>Impact Dashboard in Motion</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    One featured initiative plus live snapshots from active drives so visitors can instantly see what is
+                    funded, what is progressing, and what still needs support.
+                  </p>
+                </div>
+                <Link to="/recent-projects">
+                  <Button className="group bg-primary text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90">
+                    View More
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Heart className="h-3.5 w-3.5 text-accent" /> Total Raised
+                  </p>
+                  <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalRaised)}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Across visible homepage projects</p>
+                </div>
+                <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TreePine className="h-3.5 w-3.5 text-primary" /> Overall Target
+                  </p>
+                  <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalGoal)}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Live goal pulled project-wise</p>
+                </div>
+                <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Award className="h-3.5 w-3.5 text-accent" /> Completion
+                  </p>
+                  <p className="font-display text-xl font-bold text-foreground">
+                    {completionRate}% ({fullyFunded}/{projectsData.length} Achieved)
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Transparent funding status</p>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          <div className="grid gap-6 xl:grid-cols-12">
+            <AnimatedSection className="xl:col-span-8">
+              <motion.article
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 180, damping: 20 }}
+                className="group relative overflow-hidden rounded-[2.25rem] border border-border/85 bg-[linear-gradient(145deg,hsl(var(--card))_0%,hsl(var(--background))_58%,hsl(var(--primary)/0.08)_100%)] shadow-[0_34px_100px_-58px_hsl(var(--foreground))]"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,hsl(var(--accent)/0.14),transparent_30%),radial-gradient(circle_at_90%_85%,hsl(var(--primary)/0.12),transparent_34%)] opacity-80" />
+                <div className="relative grid lg:grid-cols-5">
+                  <div className="relative min-h-[22rem] overflow-hidden lg:col-span-2">
+                    <img
+                      src={featuredProject.image}
+                      alt={featuredProject.title}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/88 via-foreground/22 to-transparent" />
+                    <div className="absolute left-4 top-4 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground backdrop-blur-sm">
+                      Spotlight
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 rounded-[1.4rem] border border-primary-foreground/18 bg-primary-foreground/12 p-4 text-primary-foreground backdrop-blur-md">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
+                        Featured Project
+                      </p>
+                      <p className="mt-1 font-display text-2xl font-bold leading-none">
+                        {featuredProgress.toFixed(0)}%
+                      </p>
+                      <p className="mt-1 text-xs text-primary-foreground/78">funding progress</p>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-3 p-5 md:p-7 lg:p-8">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+                        {featuredProject.category}
+                      </p>
+                      <p className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                        Donation Open
+                      </p>
+                    </div>
+                    <h3 className="mt-4 font-display text-3xl font-bold leading-[0.98] text-foreground md:text-[2.55rem]">
+                      {featuredProject.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                      Project-wise data, image, target, and donation route stay tied to the same recent-project record.
+                      Share it instantly or contribute directly to this chapter.
+                    </p>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
+                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Raised</p>
+                        <p className="mt-1 text-sm font-bold text-primary sm:text-base">{formatCurrency(featuredProject.raised)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
+                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Goal</p>
+                        <p className="mt-1 text-sm font-bold text-foreground sm:text-base">{formatCurrency(featuredProject.goal)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
+                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Left</p>
+                        <p className="mt-1 text-sm font-bold text-foreground sm:text-base">{formatCurrency(featuredShortfall)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-[1.35rem] border border-primary/15 bg-primary/5 p-4">
+                      <div className="mb-1.5 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-primary">Funding Progress</span>
+                        <span className="text-muted-foreground">{featuredProgress.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${featuredProgress}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1.1, ease: "easeOut" }}
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                        />
+                      </div>
+                    </div>
+
+                    <ProjectFundingActions
+                      title={featuredProject.title}
+                      slug={featuredProject.slug}
+                      donateLabel="Donate Now"
+                      className="mt-5"
+                    />
+                  </div>
+                </div>
+              </motion.article>
+            </AnimatedSection>
+
+            <AnimatedSection className="xl:col-span-4">
+              <div className="grid h-full gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                {projectsData.slice(1).map((project, i) => {
+                  const progress = project.goal > 0 ? Math.min((project.raised / project.goal) * 100, 100) : 0;
+                  const shortfall = Math.max(project.goal - project.raised, 0);
+
+                  return (
+                    <motion.article
+                      key={project.title}
+                      whileHover={{ y: -5, x: 2 }}
+                      transition={{ duration: 0.22 }}
+                      className="group relative overflow-hidden rounded-[1.7rem] border border-border/85 bg-[linear-gradient(135deg,hsl(var(--card)/0.98)_0%,hsl(var(--background)/0.94)_60%,hsl(var(--muted)/0.55)_100%)] p-4 shadow-[0_22px_62px_-48px_hsl(var(--foreground))] transition-all duration-300 hover:border-primary/25 hover:shadow-[0_30px_78px_-48px_hsl(var(--foreground))] sm:p-5"
+                    >
+                      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary/12 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+                      <div className="pointer-events-none absolute bottom-3 right-4 font-display text-6xl font-bold leading-none text-foreground/[0.04]">
+                        {String(i + 2).padStart(2, "0")}
+                      </div>
+                      <div className="relative flex gap-4">
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 shadow-[0_18px_44px_-32px_hsl(var(--foreground))]">
+                          <img
+                            src={project.image}
+                            alt={project.title}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-foreground/45 via-transparent to-transparent" />
+                          <span className="absolute bottom-2 left-2 rounded-full bg-primary-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-foreground">
+                            {progress.toFixed(0)}%
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <p className="rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">{project.category}</p>
+                            <p className="text-[10px] font-semibold text-muted-foreground">#{i + 2}</p>
+                          </div>
+                          <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-foreground">
+                            {project.title}
+                          </h3>
+                          <p className="mt-1.5 text-xs font-medium text-muted-foreground">
+                            {shortfall === 0 ? "Goal achieved" : `${formatCurrency(shortfall)} left`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="relative mt-4 rounded-[1.15rem] border border-border/70 bg-background/65 p-3">
+                        <div className="mb-1.5 flex items-center justify-between text-xs">
+                          <span className="font-semibold text-primary">{formatCurrency(project.raised)}</span>
+                          <span className="text-muted-foreground">Goal {formatCurrency(project.goal)}</span>
+                        </div>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${progress}%` }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.9, ease: "easeOut", delay: i * 0.12 }}
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                          />
+                        </div>
+                      </div>
+                      <ProjectFundingActions
+                        title={project.title}
+                        slug={project.slug}
+                        donateLabel="Donate Now"
+                        compact
+                        className="mt-3"
+                      />
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </AnimatedSection>
+          </div>
+        </div>
       </section>
 
       {/* Quick Access */}
@@ -1105,195 +1325,6 @@ const Index = () => {
           </div>
         </section>
       ) : null}
-
-      {/* Recent Projects */}
-      <section className="relative overflow-hidden py-16 md:py-24">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,hsl(var(--primary)/0.1),transparent_40%),radial-gradient(circle_at_86%_80%,hsl(var(--accent)/0.12),transparent_42%)]" />
-        <motion.div
-          aria-hidden
-          animate={{ x: [0, 20, 0], y: [0, -12, 0], opacity: [0.12, 0.28, 0.12] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute -top-20 right-8 h-72 w-72 rounded-full bg-primary/25 blur-3xl"
-        />
-        <motion.div
-          aria-hidden
-          animate={{ x: [0, -18, 0], y: [0, 15, 0], opacity: [0.1, 0.24, 0.1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="pointer-events-none absolute -bottom-20 left-10 h-72 w-72 rounded-full bg-accent/25 blur-3xl"
-        />
-
-        <div className="container relative z-10 mx-auto px-4">
-          <AnimatedSection className="mb-8 md:mb-10">
-            <div className="rounded-[1.75rem] border border-border/85 bg-card/85 p-5 shadow-[0_30px_70px_-55px_hsl(var(--foreground))] backdrop-blur-sm md:p-7">
-              <div className="flex flex-wrap items-end justify-between gap-5">
-                <div className="max-w-2xl">
-                  <span className={sectionTagClass}>
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Recent Projects
-                  </span>
-                  <h2 className={sectionTitleClass}>Impact Dashboard in Motion</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    One featured initiative plus live snapshots from active drives so visitors can instantly see what is
-                    funded, what is progressing, and what still needs support.
-                  </p>
-                </div>
-                <Link to="/recent-projects">
-                  <Button className="group bg-primary text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90">
-                    View More
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-border/80 bg-background/80 px-4 py-3">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <Heart className="h-3.5 w-3.5 text-accent" /> Total Raised
-                  </p>
-                  <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalRaised)}</p>
-                </div>
-                <div className="rounded-2xl border border-border/80 bg-background/80 px-4 py-3">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <TreePine className="h-3.5 w-3.5 text-primary" /> Overall Target
-                  </p>
-                  <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalGoal)}</p>
-                </div>
-                <div className="rounded-2xl border border-border/80 bg-background/80 px-4 py-3">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <Award className="h-3.5 w-3.5 text-accent" /> Completion
-                  </p>
-                  <p className="font-display text-xl font-bold text-foreground">
-                    {completionRate}% ({fullyFunded}/{projectsData.length} Achieved)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </AnimatedSection>
-
-          <div className="grid gap-5 xl:grid-cols-12">
-            <AnimatedSection className="xl:col-span-7">
-              <motion.article
-                whileHover={{ y: -6 }}
-                transition={{ type: "spring", stiffness: 180, damping: 20 }}
-                className="group overflow-hidden rounded-[1.75rem] border border-border/85 bg-card shadow-[0_28px_85px_-55px_hsl(var(--foreground))]"
-              >
-                <div className="grid md:grid-cols-12">
-                  <div className="relative h-64 md:col-span-5 md:h-full">
-                    <img
-                      src={featuredProject.image}
-                      alt={featuredProject.title}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent md:bg-gradient-to-r md:from-foreground/70 md:to-transparent" />
-                    <div className="absolute left-4 top-4 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground backdrop-blur-sm">
-                      Featured Project
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-7 p-5 md:p-7">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{featuredProject.category}</p>
-                    <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-foreground md:text-[1.8rem]">
-                      {featuredProject.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                      High-priority intervention with transparent budgeting and direct delivery across community touchpoints.
-                    </p>
-
-                    <div className="mt-5 grid grid-cols-2 gap-3">
-                      <div className="rounded-xl border border-border/80 bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Raised</p>
-                        <p className="mt-1 text-sm font-semibold text-primary">{formatCurrency(featuredProject.raised)}</p>
-                      </div>
-                      <div className="rounded-xl border border-border/80 bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Goal</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">{formatCurrency(featuredProject.goal)}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="mb-1.5 flex items-center justify-between text-xs">
-                        <span className="font-semibold text-primary">Funding Progress</span>
-                        <span className="text-muted-foreground">{featuredProgress.toFixed(0)}%</span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${featuredProgress}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-primary via-accent to-primary"
-                        />
-                      </div>
-                    </div>
-
-                    <Link to="/recent-projects" className="mt-5 inline-flex items-center text-sm font-semibold text-primary">
-                      Track Full Project List
-                      <ArrowRight className="ml-1.5 h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
-              </motion.article>
-            </AnimatedSection>
-
-            <AnimatedSection className="xl:col-span-5">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                {projectsData.slice(1).map((project, i) => {
-                  const progress = Math.min((project.raised / project.goal) * 100, 100);
-                  const shortfall = Math.max(project.goal - project.raised, 0);
-
-                  return (
-                    <motion.article
-                      key={project.title}
-                      whileHover={{ y: -4, x: 2 }}
-                      transition={{ duration: 0.22 }}
-                      className="group rounded-2xl border border-border/85 bg-card/95 p-4 shadow-sm transition-shadow hover:shadow-lg sm:p-5"
-                    >
-                      <div className="flex gap-4">
-                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border/70">
-                          <img
-                            src={project.image}
-                            alt={project.title}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">{project.category}</p>
-                            <p className="text-xs text-muted-foreground">{progress.toFixed(0)}%</p>
-                          </div>
-                          <h3 className="line-clamp-2 font-display text-base font-semibold leading-tight text-foreground">
-                            {project.title}
-                          </h3>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {shortfall === 0 ? "Goal achieved" : `${formatCurrency(shortfall)} left`}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        <div className="mb-1.5 flex items-center justify-between text-xs">
-                          <span className="font-semibold text-primary">{formatCurrency(project.raised)}</span>
-                          <span className="text-muted-foreground">Goal {formatCurrency(project.goal)}</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${progress}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.9, ease: "easeOut", delay: i * 0.12 }}
-                            className="h-full bg-gradient-to-r from-primary to-accent"
-                          />
-                        </div>
-                      </div>
-                    </motion.article>
-                  );
-                })}
-              </div>
-            </AnimatedSection>
-          </div>
-        </div>
-      </section>
 
       {/* Awards */}
       <section className="py-16 md:py-24">
