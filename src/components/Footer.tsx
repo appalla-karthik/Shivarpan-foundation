@@ -189,14 +189,14 @@ const Footer = () => {
               </li>
               <li className="rounded-2xl bg-white/[0.03] p-3 lg:rounded-none lg:bg-transparent lg:p-0">
                 <a
-                  href="mailto:contact@shivarpanfoundation.org"
+                  href="mailto:info@shivarpanfoundation.org"
                   className="flex items-start gap-3 text-sm text-primary-foreground/72 transition-colors duration-300 hover:text-accent lg:items-center lg:opacity-70"
                 >
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/6 lg:mt-0 lg:h-auto lg:w-auto lg:rounded-none lg:bg-transparent">
                     <Mail className="h-4 w-4 shrink-0" />
                   </span>
                   <span className="break-all leading-6 sm:break-words">
-                    contact@shivarpanfoundation.org
+                    info@shivarpanfoundation.org
                   </span>
                 </a>
               </li>
