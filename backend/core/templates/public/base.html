@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -5,10 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>
-      {% block title %}{{ site_settings.default_meta_title|default:"Shivarpan Foundation" }}{% endblock %}
+      {% block title %}{{ site_settings.default_meta_title|default:"Shivarpan Charitable Foundation" }}{% endblock %}
     </title>
 
-    <meta name="description" content="{% block meta_description %}{{ site_settings.default_meta_description }}{% endblock %}" />
+    <meta
+      name="description"
+      content="{% block meta_description %}{{ site_settings.default_meta_description|default:'Shivarpan Charitable Foundation supports underserved communities through education, food distribution, elderly care, disability assistance, animal welfare, and transparent partnerships.' }}{% endblock %}"
+    />
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any" />
+    <link rel="icon" type="image/png" href="{% static 'img/shivarpan-logo-square.png' %}" />
 
     {% block meta_extra %}{% endblock %}
 
@@ -36,7 +42,7 @@
   <body>
     <header class="topbar">
       <div class="wrap">
-        <a class="brand" href="/">Shivarpan Foundation</a>
+        <a class="brand" href="/">Shivarpan Charitable Foundation</a>
         <nav class="nav">
           <a href="/blog/">Blog</a>
           <a href="/projects/">Projects</a>

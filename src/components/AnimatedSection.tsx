@@ -11,6 +11,7 @@ interface AnimatedSectionProps {
   className?: string;
   delay?: number;
   direction?: RevealDirection;
+  id?: string;
   once?: boolean;
   amount?: number;
 }
@@ -20,10 +21,12 @@ const AnimatedSection = ({
   className = "",
   delay = 0,
   direction = "up",
+  id,
   once = true,
   amount = 0.2,
 }: AnimatedSectionProps) => (
   <motion.div
+    id={id}
     initial="hidden"
     whileInView="visible"
     viewport={{ once, amount, margin: "-60px" }}

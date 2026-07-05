@@ -9,9 +9,9 @@ import {
   Linkedin,
 } from "lucide-react";
 import shivarpanLogo from "@/assets/shivarpan-logo.jpeg";
+import registrationImage from "@/assets/registration.jpeg";
 import footerImage from "../../foundation/static/img/footer_image.png";
-import qrCodeImage from "../../foundation/static/img/qr_code.webp";
-import { aboutContent, organizationIdentifiers } from "@/data/siteContent";
+import { aboutContent } from "@/data/siteContent";
 
 const socialLinks = [
   { Icon: Facebook, link: "https://www.facebook.com/share/17EXvAn2U2/", label: "Facebook" },
@@ -51,17 +51,28 @@ const governanceLinks = [
 
 const Footer = () => {
   return (
+    <>
+    <section className="bg-white pb-6 pt-12 sm:pb-8 sm:pt-16">
+      <div className="container mx-auto px-4 sm:px-6">
+        <img
+          src={registrationImage}
+          alt="Shivarpan Foundation registration and certification details"
+          className="mx-auto w-full max-w-[86rem] scale-[1.08] object-contain"
+        />
+      </div>
+    </section>
+
     <footer className="relative overflow-hidden bg-foreground text-primary-foreground">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 top-[95rem] sm:top-[364px] lg:top-[334px]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[15rem] sm:h-[17.5rem] lg:h-[19.5rem]"
       >
         <img
           src={footerImage}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[center_82%] sm:object-[center_68%] lg:object-[center_64%] opacity-[0.72] brightness-[1.06] contrast-[1.06] saturate-[1.02]"
+          className="absolute inset-0 h-full w-full object-fill opacity-[0.78] brightness-[1.08] contrast-[1.08] saturate-[1.04]"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,20,28,0.04)_0%,rgba(8,20,28,0.18)_22%,rgba(8,20,28,0.42)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,20,28,0.38)_0%,rgba(8,20,28,0.08)_36%,rgba(8,20,28,0.34)_100%)]" />
       </div>
 
       <div
@@ -70,7 +81,7 @@ const Footer = () => {
       >
         <div className="absolute -bottom-10 left-[-4%] h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
         <div className="absolute bottom-8 right-[6%] h-20 w-20 rounded-full bg-primary/[0.02] blur-3xl" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,transparent_0%,hsl(var(--foreground))_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-52 bg-[linear-gradient(180deg,transparent_0%,hsl(var(--foreground))_100%)]" />
         <div className="absolute bottom-2 left-[12%] h-16 w-16 rounded-full border border-primary-foreground/10" />
         <div className="absolute bottom-4 right-[20%] h-10 w-24 rounded-full border border-accent/20" />
       </div>
@@ -204,49 +215,10 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-5 border-t border-primary-foreground/10 pt-7 sm:mt-10 sm:gap-6 lg:grid-cols-[minmax(0,1.4fr)_auto] lg:items-center">
-          <div className="rounded-[1.6rem] border border-white/12 bg-[linear-gradient(135deg,rgba(10,18,24,0.18),rgba(10,18,24,0.08))] p-5 backdrop-blur-[1px] sm:p-6">
-            <h3 className="font-display text-xl font-semibold text-[#ff9f43] sm:text-2xl">
-              Registered Details
-            </h3>
-            <p className="mt-2 text-sm font-medium leading-6 text-primary-foreground/76 sm:text-base">
-              Verified foundation identity details
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {organizationIdentifiers.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-[1.1rem] border border-white/14 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(0,0,0,0.65)]"
-                >
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-primary-foreground/72">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 break-all font-mono text-[1rem] font-semibold tracking-[0.06em] text-primary-foreground/92 drop-shadow-[0_1px_8px_rgba(0,0,0,0.2)] sm:text-[1.12rem] lg:text-[1.22rem]">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="justify-self-center lg:justify-self-end">
-            <div className="flex w-full max-w-[220px] flex-col items-center rounded-[1.7rem] border border-slate-200/90 bg-white p-4 shadow-[0_28px_80px_-34px_rgba(0,0,0,0.9)] sm:max-w-none">
-              <img
-                src={qrCodeImage}
-                alt="Scan to open Shivarpan Foundation donation page"
-                className="h-auto w-full max-w-[164px] rounded-xl object-contain"
-              />
-              <p className="mt-3 text-center text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                Donate Now
-              </p>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <div className="relative z-10 border-t border-primary-foreground/10">
-        <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 py-5 text-center sm:px-6">
+        <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 pb-5 pt-[8.75rem] text-center sm:px-6 sm:pt-[9.75rem] lg:pt-[11.75rem]">
           <p className="text-xs leading-5 opacity-50">
             (c) 2026 Shivarpan Charitable Foundation. All rights reserved.
           </p>
@@ -268,6 +240,7 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+    </>
   );
 };
 

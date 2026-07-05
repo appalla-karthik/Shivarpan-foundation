@@ -164,10 +164,11 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class TestimonialSerializer(serializers.ModelSerializer):
     photo = MediaAssetSerializer(read_only=True)
+    media = MediaAssetSerializer(read_only=True)
 
     class Meta:
         model = Testimonial
-        fields = ["id", "name", "designation", "organization", "quote", "photo", "created_at"]
+        fields = ["id", "name", "designation", "organization", "quote", "photo", "media", "created_at"]
 
 class AwardSerializer(serializers.ModelSerializer):
     image = MediaAssetSerializer(read_only=True)
@@ -450,6 +451,9 @@ class HomepageAPIView(generics.GenericAPIView):
             ).data
             if homepage.hero_background_image
             else None,
+            "hero_slider_images": MediaAssetSerializer(
+                homepage.hero_slider_images.all(), many=True, context={"request": request}
+            ).data,
             "hero_cta_text": homepage.hero_cta_text,
             "hero_cta_url": homepage.hero_cta_url,
             "featured_article": ArticleSerializer(homepage.featured_article, context={"request": request}).data

@@ -221,7 +221,29 @@ class TestimonialAdmin(admin.ModelAdmin):
     list_display = ("name", "organization", "designation", "is_approved", "is_hidden", "created_at")
     list_filter = ("is_approved", "is_hidden")
     search_fields = ("name", "organization", "designation", "quote")
-    autocomplete_fields = ("photo",)
+    autocomplete_fields = ("photo", "media")
+    fieldsets = (
+        (
+            "Testimonial",
+            {
+                "fields": (
+                    "name",
+                    "designation",
+                    "organization",
+                    "quote",
+                    "is_approved",
+                    "is_hidden",
+                )
+            },
+        ),
+        (
+            "Media",
+            {
+                "description": "Use Media for either a testimonial photo or video. Photo remains as an image fallback.",
+                "fields": ("media", "photo"),
+            },
+        ),
+    )
 
 @admin.register(Award, site=admin_site)
 class AwardAdmin(admin.ModelAdmin):
@@ -273,7 +295,46 @@ class HomepageSectionInline(admin.TabularInline):
 class HomepageAdmin(admin.ModelAdmin):
     inlines = [HomepageSectionInline]
     autocomplete_fields = ("hero_background_image", "featured_article", "featured_page")
-    filter_horizontal = ("partner_logos",)
+    filter_horizontal = ("hero_slider_images", "partner_logos")
+    fieldsets = (
+        (
+            "Hero Content",
+            {
+                "fields": (
+                    "hero_title",
+                    "hero_subtitle",
+                    "hero_cta_text",
+                    "hero_cta_url",
+                )
+            },
+        ),
+        (
+            "Hero Background Slider",
+            {
+                "description": "Add multiple images here. These images will rotate automatically in the website hero section.",
+                "fields": ("hero_slider_images",),
+            },
+        ),
+        (
+            "Legacy Single Hero Image",
+            {
+                "classes": ("collapse",),
+                "description": "Used only as a fallback when no slider images are selected.",
+                "fields": ("hero_background_image",),
+            },
+        ),
+        (
+            "Homepage Links & Display",
+            {
+                "fields": (
+                    "featured_article",
+                    "featured_page",
+                    "partner_logos",
+                    "show_testimonials",
+                )
+            },
+        ),
+    )
 
     def has_add_permission(self, request):
         return not Homepage.objects.exists()

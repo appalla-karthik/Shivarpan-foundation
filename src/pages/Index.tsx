@@ -7,12 +7,14 @@ import {
   BookOpen,
   Calendar,
   Camera,
+  ChevronLeft,
   ChevronRight,
   Compass,
   FileText,
   Heart,
   Handshake,
   Mail,
+  MapPin,
   Mic,
   Play,
   Sparkles,
@@ -94,6 +96,13 @@ const galleryShots = [
   { title: "Rural Health Camp", image: campaignHealth, tag: "Healthcare" },
   { title: "Tree Plantation", image: campaignEnvironment, tag: "Environment" },
   { title: "Volunteer Day", image: campaignFood, tag: "Community" },
+];
+
+const fallbackHeroSlides = [
+  { title: "Community Work", url: aboutHero, alt_text: "Shivarpan Foundation community work" },
+  { title: "Education Support", url: campaignEducation, alt_text: "Education support by Shivarpan Foundation" },
+  { title: "Food Distribution", url: campaignFood, alt_text: "Food distribution by Shivarpan Foundation" },
+  { title: "Healthcare Outreach", url: campaignHealth, alt_text: "Healthcare outreach by Shivarpan Foundation" },
 ];
 
 const stories = [
@@ -244,6 +253,7 @@ type HomepagePayload = {
   hero_title: string;
   hero_subtitle: string;
   hero_background_image: MediaAsset | null;
+  hero_slider_images: MediaAsset[];
   hero_cta_text: string;
   hero_cta_url: string;
   partner_logos: MediaAsset[];
@@ -257,7 +267,24 @@ type TestimonialPayload = {
   organization: string;
   quote: string;
   photo: MediaAsset | null;
+  media: MediaAsset | null;
 };
+
+type UpcomingEventPayload = {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  date_label: string;
+  location_label: string;
+  poster_image: MediaAsset | null;
+  cta_text: string;
+  cta_url: string;
+};
+
+const isVideoMedia = (media?: Pick<MediaAsset, "media_type" | "url"> | null) =>
+  Boolean(media?.url) &&
+  (media?.media_type === "video" || /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(media.url));
 
 const quickAccessLinks = [
   {
@@ -316,6 +343,8 @@ const Index = () => {
   const [galleryItems, setGalleryItems] = useState<GalleryItemPayload[]>([]);
   const [storyItems, setStoryItems] = useState<StoryItemPayload[]>([]);
   const [projectItems, setProjectItems] = useState<ProjectPayload[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventPayload[]>([]);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -385,6 +414,17 @@ const Index = () => {
       }
     };
 
+    const loadUpcomingEvents = async () => {
+      try {
+        const data = await getJson<UpcomingEventPayload[]>("upcoming-events/?is_active=true", { cache: true, cacheTTL: 10 * 60 * 1000 });
+        if (isMounted) {
+          setUpcomingEvents(data.filter((event) => event.title).slice(0, 4));
+        }
+      } catch (error) {
+        reportApiError("Upcoming events API error", error);
+      }
+    };
+
     // Load data in parallel for better performance
     Promise.all([
       loadHomepage(),
@@ -392,6 +432,7 @@ const Index = () => {
       loadGallery(),
       loadStoryItems(),
       loadProjects(),
+      loadUpcomingEvents(),
     ]).catch((error) => {
       console.error("Error loading initial data:", error);
     });
@@ -406,6 +447,46 @@ const Index = () => {
   const heroCtaText = homepage?.hero_cta_text?.trim() || "Donate or Partner";
   const heroCtaUrl = homepage?.hero_cta_url?.trim() || "/contact";
   const heroImageSrc = homepage?.hero_background_image?.url;
+  const heroSlides = useMemo(() => {
+    const uploadedSlides = homepage?.hero_slider_images?.filter((image) => image.url) ?? [];
+
+    if (uploadedSlides.length > 0) {
+      return uploadedSlides;
+    }
+
+    if (heroImageSrc) {
+      return [
+        {
+          ...homepage!.hero_background_image!,
+          url: heroImageSrc,
+        },
+      ];
+    }
+
+    return fallbackHeroSlides;
+  }, [heroImageSrc, homepage]);
+
+  useEffect(() => {
+    setActiveHeroSlide(0);
+
+    if (heroSlides.length <= 1) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveHeroSlide((current) => (current + 1) % heroSlides.length);
+    }, 5200);
+
+    return () => window.clearInterval(intervalId);
+  }, [heroSlides]);
+
+  const activeEvent = upcomingEvents[activeHeroSlide % Math.max(upcomingEvents.length, 1)];
+  const nextHeroSlide = () => {
+    setActiveHeroSlide((current) => (current + 1) % heroSlides.length);
+  };
+  const previousHeroSlide = () => {
+    setActiveHeroSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length);
+  };
 
   const partnerCards = useMemo(() => {
     if (homepage?.partner_logos?.length) {
@@ -508,28 +589,35 @@ const Index = () => {
           monogram: initials,
           glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
           photoUrl: item.photo?.url,
+          media: item.media || item.photo,
         };
       });
     }
 
-    return testimonials;
+    return testimonials.map((item) => ({ ...item, media: null, photoUrl: undefined }));
   }, [homepage, testimonialItems]);
 
   return (
     <div className="overflow-hidden">
       {/* Hero */}
       <section className="relative flex min-h-[calc(100svh-5rem)] items-center overflow-hidden md:min-h-[calc(100vh-5rem)]">
-        {heroImageSrc ? (
-          <img
-            src={heroImageSrc}
-            alt="Shivarpan Foundation"
-            loading="eager"
-            fetchPriority="high"
-            className="absolute inset-0 w-full h-full object-cover"
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(circle_at_20%_80%,hsl(var(--accent)/0.25),transparent_52%),linear-gradient(135deg,hsl(var(--foreground))_0%,hsl(var(--primary))_45%,hsl(var(--accent))_100%)]" />
+        {heroSlides.map((slide, index) => (
+          <motion.img
+            key={`${slide.url}-${index}`}
+            src={slide.url}
+            alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            initial={false}
+            animate={{
+              opacity: index === activeHeroSlide ? 1 : 0,
+              scale: index === activeHeroSlide ? 1.04 : 1,
+            }}
+            transition={{ duration: 1.15, ease: "easeInOut" }}
+            className="absolute inset-0 h-full w-full object-cover"
           />
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(circle_at_20%_80%,hsl(var(--accent)/0.25),transparent_52%),linear-gradient(135deg,hsl(var(--foreground))_0%,hsl(var(--primary))_45%,hsl(var(--accent))_100%)]" />
-        )}
+        ))}
         <div className="absolute inset-0 hero-overlay opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/65 via-foreground/40 to-transparent" />
 
@@ -556,8 +644,9 @@ const Index = () => {
           ))}
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 pt-28 pb-16 sm:pb-20 md:pt-32 md:pb-24">
-          <div className="mx-auto max-w-5xl">
+        <div className="relative z-10 container mx-auto px-4 pt-28 pb-28 sm:pb-32 md:pt-32 md:pb-36">
+          <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] xl:gap-12">
+            <div className="max-w-5xl">
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -640,16 +729,117 @@ const Index = () => {
                 </Button>
               </Link>
             </motion.div>
+            </div>
+
+            <motion.aside
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.35 }}
+              className="relative overflow-hidden rounded-[1.6rem] border border-primary-foreground/20 bg-foreground/42 p-5 text-primary-foreground shadow-[0_28px_90px_-55px_rgba(0,0,0,0.95)] backdrop-blur-md"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-foreground/10 via-transparent to-accent/10" />
+              <div className="relative">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Upcoming Event
+                  </span>
+                  <span className="text-xs text-primary-foreground/65">
+                    {String(activeHeroSlide + 1).padStart(2, "0")} / {String(heroSlides.length).padStart(2, "0")}
+                  </span>
+                </div>
+
+                {activeEvent ? (
+                  <>
+                    <h3 className="font-display text-2xl font-semibold leading-tight">
+                      {activeEvent.title}
+                    </h3>
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-primary-foreground/78">
+                      {activeEvent.subtitle || activeEvent.description}
+                    </p>
+                    <div className="mt-5 grid gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/80">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/12 px-3 py-2">
+                        <Calendar className="h-3.5 w-3.5 text-accent" />
+                        {activeEvent.date_label || "Upcoming"}
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/12 px-3 py-2">
+                        <MapPin className="h-3.5 w-3.5 text-accent" />
+                        {activeEvent.location_label || "Pan India"}
+                      </span>
+                    </div>
+                    <Link to={activeEvent.cta_url || "/upcoming-events"} className="mt-5 inline-flex">
+                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        {activeEvent.cta_text || "View Event"}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-display text-2xl font-semibold leading-tight">
+                      Upcoming events will appear here
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-primary-foreground/78">
+                      Add active events from the admin panel and this hero carousel will surface them automatically.
+                    </p>
+                    <Link to="/upcoming-events" className="mt-5 inline-flex">
+                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        Upcoming Events
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </motion.aside>
           </div>
         </div>
 
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 text-primary-foreground/55"
-        >
-          <ChevronRight className="w-6 h-6 rotate-90" />
-        </motion.div>
+        <div className="absolute inset-x-0 bottom-7 z-20">
+          <div className="container mx-auto flex flex-col gap-4 px-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={previousHeroSlide}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/25 bg-foreground/35 text-primary-foreground backdrop-blur-md transition hover:bg-primary-foreground hover:text-foreground"
+                aria-label="Previous hero slide"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={nextHeroSlide}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/25 bg-foreground/35 text-primary-foreground backdrop-blur-md transition hover:bg-primary-foreground hover:text-foreground"
+                aria-label="Next hero slide"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <div className="h-px w-16 bg-primary-foreground/40" />
+              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-primary-foreground/75">
+                Slide {String(activeHeroSlide + 1).padStart(2, "0")}
+              </span>
+            </div>
+
+            <div className="grid max-w-md grid-cols-4 gap-2">
+              {heroSlides.slice(0, 4).map((slide, index) => (
+                <button
+                  key={`hero-thumb-${slide.url}-${index}`}
+                  type="button"
+                  onClick={() => setActiveHeroSlide(index)}
+                  className={`relative h-14 overflow-hidden rounded-xl border transition ${
+                    index === activeHeroSlide
+                      ? "border-accent ring-2 ring-accent/45"
+                      : "border-primary-foreground/20 opacity-70 hover:opacity-100"
+                  }`}
+                  aria-label={`Open hero slide ${index + 1}`}
+                >
+                  <img src={slide.url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
       </section>
 
       {/* Recent Projects - Impact Dashboard */}
@@ -1286,33 +1476,59 @@ const Index = () => {
               </div>
             </AnimatedSection>
 
-            <div className="grid gap-5 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {testimonialsToShow.map((item, index) => (
                 <AnimatedSection key={`${item.name}-${index}`} delay={index * 0.08}>
                   <motion.div
                     whileHover={{ y: -6 }}
-                    className="group relative h-full overflow-hidden rounded-3xl border border-border/80 bg-card/90 p-6 shadow-[0_28px_70px_-55px_hsl(var(--foreground))] backdrop-blur-sm"
+                    className="group relative h-full overflow-hidden rounded-[1.35rem] border border-border/80 bg-card shadow-[0_28px_70px_-55px_hsl(var(--foreground))]"
                   >
                     <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.glow} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
-                    <div className="relative flex items-center gap-1 text-accent">
+                    <div className="relative aspect-video overflow-hidden bg-foreground/90">
+                      {item.media?.url ? (
+                        isVideoMedia(item.media) ? (
+                          <video
+                            src={item.media.url}
+                            controls
+                            preload="metadata"
+                            className="h-full w-full object-cover"
+                            aria-label={`${item.name} testimonial video`}
+                          />
+                        ) : (
+                          <img
+                            src={item.media.url}
+                            alt={`${item.name} testimonial`}
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        )
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),linear-gradient(135deg,hsl(var(--foreground)),hsl(var(--primary)))]">
+                          <span className="font-display text-3xl font-bold text-primary-foreground">
+                            {item.monogram}
+                          </span>
+                        </div>
+                      )}
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/70 to-transparent" />
+                    </div>
+                    <div className="relative flex items-center gap-1 px-4 pt-4 text-accent">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star key={i} className="h-4 w-4 fill-current" />
                       ))}
                     </div>
-                    <p className="relative mt-4 text-sm leading-relaxed text-foreground/90 sm:text-base">
+                    <p className="relative mt-3 px-4 text-sm leading-relaxed text-foreground/90">
                       “{item.quote}”
                     </p>
-                    <div className="relative mt-6 flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary">
+                    <div className="relative mt-4 flex items-center gap-3 px-4 pb-4">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
                         {"photoUrl" in item && item.photoUrl ? (
                           <img src={item.photoUrl} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
                           item.monogram
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.role}</p>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{item.role}</p>
                       </div>
                       <span className="ml-auto inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
                         {item.tag}

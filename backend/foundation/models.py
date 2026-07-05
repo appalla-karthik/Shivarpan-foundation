@@ -212,6 +212,14 @@ class Testimonial(TimeStampedModel):
     photo = models.ForeignKey(
         MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="testimonial_photos"
     )
+    media = models.ForeignKey(
+        MediaAsset,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="testimonial_media",
+        help_text="Upload/select a testimonial photo or video. If empty, photo is used as fallback.",
+    )
     is_approved = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
 
@@ -343,6 +351,12 @@ class Homepage(TimeStampedModel):
     hero_subtitle = models.TextField(blank=True)
     hero_background_image = models.ForeignKey(
         MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="homepage_hero_images"
+    )
+    hero_slider_images = models.ManyToManyField(
+        MediaAsset,
+        blank=True,
+        related_name="homepage_hero_slider_sets",
+        help_text="Select multiple images for the homepage hero background slider.",
     )
     hero_cta_text = models.CharField(max_length=100, blank=True)
     hero_cta_url = models.URLField(blank=True)

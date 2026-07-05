@@ -9,7 +9,12 @@
       padding: 64px 0;
       color: white;
       background:
-        {% if homepage.hero_background_image and homepage.hero_background_image.file %}
+        {% if homepage.hero_slider_images.all|length %}
+          linear-gradient(180deg, rgba(11,18,32,0.92), rgba(11,18,32,0.60)),
+          url('{{ homepage.hero_slider_images.all.0.file.url }}');
+          background-size: cover;
+          background-position: center;
+        {% elif homepage.hero_background_image and homepage.hero_background_image.file %}
           linear-gradient(180deg, rgba(11,18,32,0.92), rgba(11,18,32,0.60)),
           url('{{ homepage.hero_background_image.file.url }}');
           background-size: cover;
