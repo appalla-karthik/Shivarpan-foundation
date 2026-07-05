@@ -39,6 +39,7 @@ from foundation.models import (
     Project,
     Subscriber,
     Tag,
+    TeamMember,
     Testimonial,
     UpcomingEvent,
 )
@@ -169,6 +170,28 @@ class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
         fields = ["id", "name", "designation", "organization", "quote", "photo", "media", "created_at"]
+
+
+class TeamMemberSerializer(serializers.ModelSerializer):
+    photo = MediaAssetSerializer(read_only=True)
+    state_label = serializers.CharField(source="get_state_display", read_only=True)
+
+    class Meta:
+        model = TeamMember
+        fields = [
+            "id",
+            "state",
+            "state_label",
+            "name",
+            "position",
+            "photo",
+            "note",
+            "sort_order",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
 
 class AwardSerializer(serializers.ModelSerializer):
     image = MediaAssetSerializer(read_only=True)
@@ -419,6 +442,13 @@ class ProjectViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
 class TestimonialViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Testimonial.objects.filter(is_approved=True, is_hidden=False).order_by("-created_at")
     serializer_class = TestimonialSerializer
+
+
+class TeamMemberViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TeamMember.objects.filter(is_active=True).select_related("photo").order_by("state", "sort_order", "name")
+    serializer_class = TeamMemberSerializer
+    filterset_fields = ["state", "is_active"]
+
 
 class AwardViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Award.objects.filter(is_active=True).order_by("sort_order", "-created_at")

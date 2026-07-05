@@ -32,6 +32,7 @@ from foundation.models import (
     SiteSettings,
     Subscriber,
     Tag,
+    TeamMember,
     Testimonial,
     UpcomingEvent,
     Visitor,
@@ -244,6 +245,16 @@ class TestimonialAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(TeamMember, site=admin_site)
+class TeamMemberAdmin(admin.ModelAdmin):
+    list_display = ("name", "state", "position", "is_active", "sort_order", "updated_at")
+    list_filter = ("state", "is_active")
+    search_fields = ("name", "position", "note")
+    autocomplete_fields = ("photo",)
+    fields = ("state", "name", "position", "photo", "note", "sort_order", "is_active")
+
 
 @admin.register(Award, site=admin_site)
 class AwardAdmin(admin.ModelAdmin):

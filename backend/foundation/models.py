@@ -227,6 +227,29 @@ class Testimonial(TimeStampedModel):
         return f"{self.name} ({self.organization})" if self.organization else self.name
 
 
+class TeamMember(TimeStampedModel):
+    class State(models.TextChoices):
+        ANDHRA_PRADESH = "andhra_pradesh", "Andhra Pradesh"
+        WEST_BENGAL = "west_bengal", "West Bengal"
+        UTTAR_PRADESH = "uttar_pradesh", "Uttar Pradesh"
+
+    state = models.CharField(max_length=80, choices=State.choices)
+    name = models.CharField(max_length=255)
+    position = models.CharField(max_length=255)
+    photo = models.ForeignKey(
+        MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="team_member_photos"
+    )
+    note = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["state", "sort_order", "name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.get_state_display()}"
+
+
 class Project(PublishableModel, SeoFields):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
