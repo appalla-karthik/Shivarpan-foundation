@@ -178,7 +178,7 @@ const upcomingAwards: UpcomingAward[] = [
 
 const Awards = () => {
   const [awardRecognitions, setAwardRecognitions] = useState<AwardRecognition[]>(fallbackAwards);
-  const [experienceStarted, setExperienceStarted] = useState(false);
+  const [experienceStarted, setExperienceStarted] = useState(true);
   const [isHeroAnimating, setIsHeroAnimating] = useState(false);
   const experienceSectionRef = useRef<HTMLElement | null>(null);
   const heroTypeRef = useRef<HTMLDivElement | null>(null);
@@ -831,10 +831,10 @@ const Awards = () => {
                         />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_32%,rgba(0,0,0,0.52)_100%)]" />
                         <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-3">
-                          <span className="rounded-full border border-white/18 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/88 backdrop-blur-sm">
+                          <span className="rounded-full border border-white/18 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/88 backdrop-blur-sm">
                             {award.presenter}
                           </span>
-                          <span className="rounded-full border border-[#ffcf67]/30 bg-[#ffcf67]/16 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ffe08a]">
+                          <span className="rounded-full border border-[#ffcf67]/30 bg-[#ffcf67]/16 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#ffe08a]">
                             2026
                           </span>
                         </div>
@@ -842,7 +842,7 @@ const Awards = () => {
 
                       <div className="relative flex flex-1 flex-col p-5">
                         <div className="min-h-[5.5rem]">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffd978]">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ffd978]">
                             Upcoming Award
                           </p>
                           <h3 className="mt-2 max-w-[12ch] font-display text-[2.15rem] font-bold leading-[0.9] text-white sm:text-[2.35rem]">
@@ -853,7 +853,7 @@ const Awards = () => {
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">
                           <div className="flex h-full flex-col rounded-[1.15rem] border border-white/12 bg-white/[0.04] p-3.5">
-                            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/48">
+                            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/48">
                               <CalendarDays className="h-3.5 w-3.5 text-accent" />
                               Event Date
                             </p>
@@ -862,7 +862,7 @@ const Awards = () => {
                             </p>
                           </div>
                           <div className="flex h-full flex-col rounded-[1.15rem] border border-white/12 bg-white/[0.04] p-3.5">
-                            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/48">
+                            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/48">
                               <MapPin className="h-3.5 w-3.5 text-accent" />
                               Venue
                             </p>
@@ -873,7 +873,7 @@ const Awards = () => {
                         </div>
 
                         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                          <span className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/62">
+                          <span className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/62">
                             Upcoming Showcase
                           </span>
                           <Link

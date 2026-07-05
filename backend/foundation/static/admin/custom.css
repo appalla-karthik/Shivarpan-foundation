@@ -848,9 +848,15 @@ body.shiv-login-page .errorlist {
 
 .shiv-dashboard__stat-value {
   color: var(--shiv-ink);
-  font-size: 2rem;
+  font-size: clamp(1.45rem, 2vw, 2rem);
   font-weight: 700;
   line-height: 1;
+}
+
+.shiv-dashboard__stat-note {
+  margin: 0.55rem 0 0;
+  color: var(--shiv-muted);
+  font-size: 0.82rem;
 }
 
 .shiv-dashboard__grid {
@@ -861,6 +867,103 @@ body.shiv-login-page .errorlist {
 
 .shiv-dashboard__panel {
   padding: 1rem;
+}
+
+.shiv-dashboard__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.shiv-dashboard__panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.shiv-dashboard__panel-heading h2 {
+  margin-bottom: 0.25rem;
+}
+
+.shiv-dashboard__panel-heading p {
+  margin: 0;
+  color: var(--shiv-muted);
+  font-size: 0.9rem;
+}
+
+.shiv-dashboard__panel-heading span {
+  border: 1px solid rgba(31, 95, 122, 0.18);
+  border-radius: 999px;
+  background: rgba(31, 95, 122, 0.08);
+  padding: 0.35rem 0.75rem;
+  color: var(--shiv-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shiv-dashboard__campaign-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.shiv-dashboard__pie {
+  position: relative;
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #e8eef3;
+  box-shadow: inset 0 0 0 18px rgba(255, 255, 255, 0.92), 0 22px 50px -38px rgba(15, 23, 42, 0.55);
+  overflow: hidden;
+}
+
+.shiv-dashboard__pie span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from calc(var(--offset) * 3.6deg), var(--color) 0 calc(var(--value) * 3.6deg), transparent 0);
+}
+
+.shiv-dashboard__pie::after {
+  content: "Campaigns";
+  position: absolute;
+  inset: 50%;
+  width: 54%;
+  height: 54%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--shiv-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shiv-dashboard__pie em {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  color: var(--shiv-muted);
+  text-align: center;
+  font-style: normal;
+  font-size: 0.85rem;
+}
+
+.shiv-dashboard__legend {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.45rem;
+  border-radius: 999px;
 }
 
 .shiv-dashboard__panel h2,
@@ -962,6 +1065,21 @@ body.shiv-login-page .errorlist {
   word-break: break-word;
 }
 
+.shiv-dashboard__table--campaigns th:nth-child(1),
+.shiv-dashboard__table--campaigns td:nth-child(1) {
+  width: 48%;
+}
+
+.shiv-dashboard__table--donations th:nth-child(1),
+.shiv-dashboard__table--donations td:nth-child(1) {
+  width: 24%;
+}
+
+.shiv-dashboard__table--donations th:nth-child(2),
+.shiv-dashboard__table--donations td:nth-child(2) {
+  width: 36%;
+}
+
 .shiv-dashboard__table--activity td:nth-child(3),
 .shiv-dashboard__table--contacts td:nth-child(4) {
   white-space: normal;
@@ -993,6 +1111,10 @@ body.shiv-login-page .errorlist {
 @media (max-width: 768px) {
   .shiv-dashboard__stats,
   .shiv-dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shiv-dashboard__campaign-layout {
     grid-template-columns: 1fr;
   }
 

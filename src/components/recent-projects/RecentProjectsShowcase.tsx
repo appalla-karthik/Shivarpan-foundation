@@ -28,7 +28,7 @@ interface RecentProjectsShowcaseProps {
 }
 
 const getUtilizationPercent = (spent: number, budget: number) =>
-  budget > 0 ? Math.round((spent / budget) * 100) : 0;
+  budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
 
 const RecentProjectsShowcase = ({
   projects: providedProjects,

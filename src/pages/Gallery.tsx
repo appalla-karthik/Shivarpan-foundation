@@ -24,16 +24,17 @@ const Gallery = ({ heroTitle, heroSubtitle, heroImage }) => {
   const [activeTag, setActiveTag] = useState("All");
 
   useEffect(() => {
-    getJson<any[]>("gallery/")
+    getJson<any>("gallery/")
       .then((data) => {
+        const items = Array.isArray(data) ? data : (data?.results || []);
         setGalleryItems(
-          data.map((item) => ({
+          items.map((item: any) => ({
             ...item,
             image: assetUrl(item.image),
           })),
         );
       })
-      .catch(() => undefined);
+      .catch((err) => console.error("Failed to load gallery items:", err));
   }, []);
 
   const filteredItems =

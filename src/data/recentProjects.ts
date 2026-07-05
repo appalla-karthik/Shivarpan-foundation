@@ -48,6 +48,22 @@ export interface RecentProjectsApiItem {
   } | null;
 }
 
+export interface CampaignFundingItem {
+  project_slug: string;
+  project_title: string;
+  raised: number;
+  donors: number;
+  one_time_raised?: number;
+  monthly_raised?: number;
+}
+
+export interface CampaignFundingSummary {
+  projects: CampaignFundingItem[];
+  total_raised: number;
+  total_donors: number;
+  updated_at: string;
+}
+
 export interface SectorSplit {
   title: string;
   icon: LucideIcon;
@@ -355,11 +371,12 @@ const resolveProjectIcon = (focus?: string, fallbackIcon?: LucideIcon) => {
 export const mapRecentProjectsFromApi = (
   items?: RecentProjectsApiItem[] | null,
 ): RecentProject[] => {
-  if (!items || items.length === 0) {
+  const validItems = items?.filter(item => item.title.toLowerCase() !== 'abcd');
+  if (!validItems || validItems.length === 0) {
     return recentProjects;
   }
 
-  return items.map((item) => {
+  return validItems.map((item) => {
     const fallbackProject = getFallbackProject(item);
     const impact = item.impact_numbers ?? {};
     const focus =
@@ -420,6 +437,31 @@ export const mapRecentProjectsFromApi = (
         readImpactStringArray(impact, "outcomes", "highlights", "milestones") ??
         fallbackProject?.outcomes ??
         [],
+    };
+  });
+};
+
+export const applyCampaignFundingToProjects = (
+  projects: RecentProject[],
+  funding?: CampaignFundingSummary | null,
+) => {
+  if (!funding?.projects?.length) {
+    return projects;
+  }
+
+  const fundingBySlug = new Map(
+    funding.projects.map((item) => [item.project_slug, item]),
+  );
+
+  return projects.map((project) => {
+    const fundingItem = fundingBySlug.get(project.slug);
+    if (!fundingItem) {
+      return project;
+    }
+
+    return {
+      ...project,
+      spent: fundingItem.raised,
     };
   });
 };

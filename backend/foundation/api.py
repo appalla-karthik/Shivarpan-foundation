@@ -4,6 +4,7 @@ import uuid
 from foundation.models import GalleryItem
 from django.conf import settings
 from django.db import IntegrityError
+from django.db.models import Count, Max, Q, Sum
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import generics, serializers, viewsets
@@ -537,6 +538,8 @@ class DonationCheckoutSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     email = serializers.EmailField()
     phone = serializers.CharField(max_length=32)
+    project_slug = serializers.SlugField(max_length=255, required=False, allow_blank=True)
+    project_title = serializers.CharField(max_length=255, required=False, allow_blank=True)
     payment_mode = serializers.CharField(max_length=50, required=False, allow_blank=True)
     message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
@@ -597,6 +600,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
             currency=data["currency"],
             donation_type=data["donation_type"],
             payment_mode_preference=data.get("payment_mode", ""),
+            project_slug=data.get("project_slug", ""),
+            project_title=data.get("project_title", ""),
             message=data.get("message") or "",
             receipt=f"don_{uuid.uuid4().hex[:18]}",
             notes={"source": "website", "payment_mode": data.get("payment_mode", "")},
@@ -610,6 +615,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "currency": donation.currency,
                 "donation_type": donation.donation_type,
                 "payment_mode_preference": donation.payment_mode_preference,
+                "project_slug": donation.project_slug,
+                "project_title": donation.project_title,
             },
         )
 
@@ -621,6 +628,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "donor_name": donation.donor_name,
                 "donor_email": donation.donor_email,
                 "donation_type": donation.donation_type,
+                "project_slug": donation.project_slug,
+                "project_title": donation.project_title,
             }
             create_donation_log(
                 donation,
@@ -853,6 +862,54 @@ class DonationVerifyAPIView(generics.GenericAPIView):
                 "detail": "Payment verified successfully.",
                 "status": donation.status,
                 "donation_id": donation.id,
+            }
+        )
+
+
+class DonationFundingSummaryAPIView(generics.GenericAPIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        paid_statuses = [
+            Donation.Status.PAID,
+            Donation.Status.SUBSCRIPTION_AUTHORIZED,
+        ]
+        totals = Donation.objects.filter(
+            status__in=paid_statuses,
+            project_slug__gt="",
+        ).values("project_slug").annotate(
+            project_title=Max("project_title"),
+            raised=Sum("amount"),
+            donors=Count("id"),
+            one_time_raised=Sum(
+                "amount",
+                filter=Q(donation_type=Donation.DonationType.ONE_TIME),
+            ),
+            monthly_raised=Sum(
+                "amount",
+                filter=Q(donation_type=Donation.DonationType.MONTHLY),
+            ),
+        ).order_by("project_title", "project_slug")
+
+        projects = [
+            {
+                "project_slug": row["project_slug"],
+                "project_title": row["project_title"] or row["project_slug"],
+                "raised": row["raised"] or 0,
+                "donors": row["donors"] or 0,
+                "one_time_raised": row["one_time_raised"] or 0,
+                "monthly_raised": row["monthly_raised"] or 0,
+            }
+            for row in totals
+        ]
+
+        return Response(
+            {
+                "projects": projects,
+                "total_raised": sum(project["raised"] for project in projects),
+                "total_donors": sum(project["donors"] for project in projects),
+                "updated_at": timezone.now().isoformat(),
             }
         )
 

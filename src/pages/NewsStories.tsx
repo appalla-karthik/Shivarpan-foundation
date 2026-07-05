@@ -192,7 +192,7 @@
               />
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/35 to-primary/15" />
               <div className="absolute inset-x-0 bottom-0 p-4 text-primary-foreground">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/80">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/80">
                   {card.category}
                 </p>
                 <h3 className="mt-1 line-clamp-2 text-lg font-display font-bold leading-tight">
@@ -242,9 +242,37 @@
       return heroImages[(imageIndex - 1) % heroImages.length];
     };
   useEffect(() => {
+    const getFallbackItems = () => {
+      const fallbackItems = stories.map((story, index) => ({
+        id: index + 1,
+        title: story.title,
+        image: story.image,
+        category: "Impact Story",
+        description: story.excerpt,
+        date: story.date,
+        location: "India",
+        sort_order: index,
+      }));
+
+      if (fallbackItems.length < 4) {
+        fallbackItems.push({
+          id: 4,
+          title: "Community Volunteers in Action",
+          image: fallbackHeroSlides[0].url,
+          category: "Volunteer Impact",
+          description: "A closer look at the volunteers powering our field programs.",
+          date: "Mar 2026",
+          location: "India",
+          sort_order: 3,
+        });
+      }
+
+      return fallbackItems;
+    };
+
     getJson<any[]>("story-items/")
       .then((items) => {
-        const storyItems = Array.isArray(items) ? items : [];
+        const storyItems = Array.isArray(items) && items.length ? items : getFallbackItems();
 
         setFlipCards(
           storyItems.map((item: any) => ({
@@ -278,7 +306,41 @@
           })),
         );
       })
-      .catch(() => undefined);
+      .catch(() => {
+        const fallbackItems = getFallbackItems();
+
+        setFlipCards(
+          fallbackItems.map((item) => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            image: assetUrl(item.image),
+            alt: item.title,
+            metric: "Impact",
+            summary: item.description,
+            cta: "Read More",
+          })),
+        );
+
+        setHeroImages(
+          fallbackItems.map((item) => ({
+            image: assetUrl(item.image),
+            alt: item.title,
+          })),
+        );
+
+        setStoriesData(
+          fallbackItems.map((item) => ({
+            title: item.title,
+            image: assetUrl(item.image),
+            date: item.date,
+            location: item.location,
+            readTime: "3 min read",
+            category: item.category,
+            excerpt: item.description,
+          })),
+        );
+      });
   }, []);
 
     const reduceMotion = useReducedMotion();
@@ -545,7 +607,7 @@
                     <Sparkles className="h-3.5 w-3.5" />
                     Stories
                   </span>
-                  <span className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                     Field Dispatches
                   </span>
                 </div>
@@ -563,7 +625,7 @@
                   </div>
 
                   <div className="rounded-[1.6rem] border border-border/70 bg-background/90 p-4 shadow-[0_18px_40px_-34px_hsl(var(--foreground))] backdrop-blur-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
                       Editorial Lens
                     </p>
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -588,7 +650,7 @@
                     transition={{ delay: index * 0.08, duration: 0.5 }}
                     className="rounded-[1.6rem] border border-border/80 bg-card px-4 py-4 shadow-[0_16px_45px_-42px_hsl(var(--foreground))]"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Story Metric
                     </p>
                     <p className="mt-2 font-display text-3xl font-bold leading-none text-foreground">
@@ -630,7 +692,7 @@
                       </span>
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 rounded-[1.5rem] border border-primary-foreground/20 bg-foreground/55 p-4 text-primary-foreground backdrop-blur-sm">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
                         Lead Dispatch
                       </p>
                       <p className="mt-2 text-sm leading-relaxed text-primary-foreground/90">
@@ -641,7 +703,7 @@
                   </div>
 
                   <div className="flex flex-col md:col-span-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
                       Featured Story
                     </p>
                     <h3 className="mt-2 font-display text-3xl font-bold leading-tight text-foreground">
@@ -653,7 +715,7 @@
 
                     <div className="mt-5 grid gap-3">
                       <div className="rounded-2xl border border-border/80 bg-background px-4 py-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Published
                         </p>
                         <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -662,7 +724,7 @@
                         </p>
                       </div>
                       <div className="rounded-2xl border border-border/80 bg-background px-4 py-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Reading Time
                         </p>
                         <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -673,7 +735,7 @@
                     </div>
 
                     <div className="mt-5 rounded-[1.5rem] border border-border/80 bg-background p-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
                         Story Angle
                       </p>
                       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -714,7 +776,7 @@
                           <Badge className="bg-primary/12 text-primary hover:bg-primary/12">
                             {story?.category}
                           </Badge>
-                          <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                          <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                             {story.date}
                           </span>
                         </div>
@@ -746,7 +808,7 @@
                   transition={{ duration: 0.55, delay: 0.12 }}
                   className="rounded-[1.9rem] border border-border/80 bg-foreground p-5 text-primary-foreground shadow-[0_24px_70px_-52px_hsl(var(--foreground))]"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                     Story Blueprint
                   </p>
                   <h3 className="mt-2 font-display text-2xl font-semibold leading-tight">
@@ -847,7 +909,7 @@
                 style={{ y: flipHeaderY, opacity: flipHeaderOpacity }}
                 className="relative z-30 mx-auto max-w-4xl text-center text-foreground"
               >
-                <span className="inline-flex items-center mt-3 gap-2 rounded-full border border-primary/20 bg-card/80 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary sm:text-xs">
+                <span className="inline-flex items-center mt-3 gap-2 rounded-full border border-primary/20 bg-card/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary sm:text-xs">
                   <Sparkles className="h-3.5 w-3.5" />
                   Compassion Stories
                 </span>
@@ -884,7 +946,7 @@
 
               <motion.p
                 style={{ opacity: flipHintOpacity }}
-                className="pointer-events-none mx-auto mt-auto rounded-full border border-border bg-card/85 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground"
+                className="pointer-events-none mx-auto mt-auto rounded-full border border-border bg-card/85 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
               >
                 Scroll to witness stories of care, courage, and community support
               </motion.p>

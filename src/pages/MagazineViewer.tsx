@@ -148,7 +148,7 @@ const FlipPage = forwardRef<HTMLDivElement, FlipPageProps>(({ page, ...props }, 
       {isCover ? (
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent">
           <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-black/40 p-3 text-white backdrop-blur">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-white/80">Cover Page</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-white/80">Cover Page</p>
             <p className="mt-1 text-sm font-semibold leading-snug">{page.label}</p>
           </div>
         </div>
@@ -458,7 +458,7 @@ const MagazineViewer = () => {
           <Button
             type="button"
             onClick={() => navigate("/e-magazine-articles")}
-            className="bg-[#f59e0b] text-[#10381f] hover:bg-[#f8b33a]"
+            className="bg-[#f59e0b] text-sm text-[#10381f] hover:bg-[#f8b33a]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Library

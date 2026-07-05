@@ -37,7 +37,9 @@ const ProjectChapters = ({ projects }: ProjectChaptersProps) => (
       <div className="space-y-10">
         {projects.map((project, index) => {
           const ProjectIcon = project.icon;
-          const utilizationPercent = Math.round((project.spent / project.budget) * 100);
+          const utilizationPercent = project.budget > 0
+            ? Math.min(Math.round((project.spent / project.budget) * 100), 100)
+            : 0;
           const isCompleted = project.status === "Completed";
 
           return (

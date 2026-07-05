@@ -224,3 +224,55 @@ export const termsContent: LegalDocument = {
     },
   ],
 };
+
+export const refundPolicyContent: LegalDocument = {
+  title: "Refund Policy",
+  subtitle:
+    "Shivarpan Charitable Foundation's refund policy for donations and support transactions made through this website.",
+  lastUpdated: "March 2026",
+  intro: [
+    "At Shivarpan Charitable Foundation, we strive to use every contribution responsibly and transparently for our charitable programs. Donations made through this website are generally non-refundable unless otherwise specified or required by law.",
+    "This Refund Policy outlines the conditions under which a refund may be issued and how to request one.",
+  ],
+  sections: [
+    {
+      heading: "Donation Refunds",
+      paragraphs: [
+        "Donations made via the website are intended to support the foundation's charitable activities and are typically non-refundable.",
+        "Refund requests are considered only in exceptional cases, such as payment processing errors or duplicate contributions.",
+      ],
+    },
+    {
+      heading: "How to Request a Refund",
+      paragraphs: [
+        "If you believe a refund is warranted, please contact us as soon as possible using the contact information provided on our website.",
+        "Provide details about the transaction, including the date, amount, payment method, and any relevant order or donation reference.",
+      ],
+      bullets: [
+        "Send your refund request through the website contact form or email address.",
+        "Include donation details and the reason for the request.",
+        "Allow up to 7 business days for the foundation to review your request.",
+      ],
+    },
+    {
+      heading: "Approval and Processing",
+      paragraphs: [
+        "Refund approval is at the sole discretion of Shivarpan Charitable Foundation and may depend on the circumstances surrounding the donation.",
+        "If approved, the refund will be processed using the original payment method whenever possible.",
+      ],
+    },
+    {
+      heading: "Exceptions",
+      paragraphs: [
+        "Refunds are not guaranteed and may not be available for donations that have already been allocated to programs or operational costs.",
+        "In some cases, alternative resolutions such as credit toward future contributions may be offered.",
+      ],
+    },
+    {
+      heading: "Contact Information",
+      paragraphs: [
+        "If you have questions regarding this Refund Policy or need assistance, please reach out through the contact details available on our website.",
+      ],
+    },
+  ],
+};

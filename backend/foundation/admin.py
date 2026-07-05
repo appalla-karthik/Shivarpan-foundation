@@ -445,11 +445,12 @@ class DonationAdmin(admin.ModelAdmin):
         "donor_email",
         "amount",
         "donation_type",
+        "project_title",
         "status",
         "razorpay_payment_id",
         "created_at",
     )
-    list_filter = ("donation_type", "status", "created_at")
+    list_filter = ("donation_type", "status", "project_slug", "created_at")
     inlines = [DonationPaymentLogInline]
     search_fields = (
         "donor_name",
@@ -459,6 +460,8 @@ class DonationAdmin(admin.ModelAdmin):
         "razorpay_order_id",
         "razorpay_subscription_id",
         "razorpay_payment_id",
+        "project_slug",
+        "project_title",
     )
     readonly_fields = (
         "receipt",

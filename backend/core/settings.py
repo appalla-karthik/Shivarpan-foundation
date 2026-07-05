@@ -254,6 +254,8 @@ default_cors_origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
 ]
 
 CORS_ALLOWED_ORIGINS = env_list(
@@ -262,6 +264,17 @@ CORS_ALLOWED_ORIGINS = env_list(
 )
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow some additional headers commonly sent by browsers (e.g. cache-control)
+try:
+    from corsheaders.defaults import default_headers
+
+    CORS_ALLOW_HEADERS = list(default_headers) + [
+        "cache-control",
+    ]
+except Exception:
+    # If corsheaders isn't importable for some reason, fall back to a minimal list
+    CORS_ALLOW_HEADERS = ["content-type", "authorization", "cache-control"]
 
 # -------------------------------------------------
 # CSRF (for POST requests from frontend)

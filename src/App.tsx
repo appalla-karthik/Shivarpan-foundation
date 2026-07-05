@@ -1,33 +1,34 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense, useEffect, useState } from "react";
-import { HashRouter, Route, Routes, useLocation } from "react-router-dom";
+import { Suspense, useEffect, useState } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-const UpcomingEventPopup = lazy(() => import("./components/UpcomingEventPopup"));
-const Index = lazy(() => import("./pages/Index"));
-const DynamicPage = lazy(() => import("./pages/DynamicPage"));
-const About = lazy(() => import("./pages/About"));
-const Gallery = lazy(() => import("./pages/Gallery"));
-const NewsStories = lazy(() => import("./pages/NewsStories"));
-const RecentProjects = lazy(() => import("./pages/RecentProjects"));
-const Awards = lazy(() => import("./pages/Awards"));
-const Podcast = lazy(() => import("./pages/Podcast"));
-const PodcastEpisode = lazy(() => import("./pages/PodcastEpisode"));
-const Contact = lazy(() => import("./pages/Contact"));
-const DonateNow = lazy(() => import("./pages/DonateNow"));
-const UpcomingEvents = lazy(() => import("./pages/UpcomingEvents"));
-const EMagazineArticles = lazy(() => import("./pages/EMagazineArticles"));
-const MagazineViewer = lazy(() => import("./pages/MagazineViewer"));
-const BoardOfTrustees = lazy(() => import("./pages/BoardOfTrustees"));
-const TeamMembers = lazy(() => import("./pages/TeamMembers"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
-const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+import UpcomingEventPopup from "./components/UpcomingEventPopup";
+import Index from "./pages/Index";
+import DynamicPage from "./pages/DynamicPage";
+import About from "./pages/About";
+import Gallery from "./pages/Gallery";
+import NewsStories from "./pages/NewsStories";
+import RecentProjects from "./pages/RecentProjects";
+import Awards from "./pages/Awards";
+import Podcast from "./pages/Podcast";
+import PodcastEpisode from "./pages/PodcastEpisode";
+import Contact from "./pages/Contact";
+import DonateNow from "./pages/DonateNow";
+import UpcomingEvents from "./pages/UpcomingEvents";
+import EMagazineArticles from "./pages/EMagazineArticles";
+import MagazineViewer from "./pages/MagazineViewer";
+import BoardOfTrustees from "./pages/BoardOfTrustees";
+import TeamMembers from "./pages/TeamMembers";
+import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import RefundPolicy from "./pages/RefundPolicy";
+import AdminPanel from "./pages/AdminPanel";
 
 const RouteFallback = () => (
   <div className="min-h-[60vh] bg-background" aria-label="Loading page" />
@@ -64,6 +65,7 @@ const AppRoutes = () => {
             <Route path="/upcoming-events" element={<DynamicPage slug="upcoming-events" fallback={<UpcomingEvents />} />} />
             <Route path="/privacy-policy" element={<DynamicPage slug="privacy-policy" fallback={<PrivacyPolicy />} />} />
             <Route path="/terms-and-conditions" element={<DynamicPage slug="terms-and-conditions" fallback={<TermsAndConditions />} />} />
+            <Route path="/refund-policy" element={<DynamicPage slug="refund-policy" fallback={<RefundPolicy />} />} />
             <Route path="/board-of-trustees" element={<BoardOfTrustees />} />
             <Route path="/team-members" element={<TeamMembers />} />
             <Route path="/e-magazine-articles" element={<DynamicPage slug="e-magazine-articles" fallback={<EMagazineArticles />} />} />
@@ -94,7 +96,7 @@ const App = () => {
     <ErrorBoundary>
       <TooltipProvider>
         <Toaster />
-        <HashRouter
+        <BrowserRouter
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
@@ -108,7 +110,7 @@ const App = () => {
           <Suspense fallback={<RouteFallback />}>
             <AppRoutes />
           </Suspense>
-        </HashRouter>
+        </BrowserRouter>
       </TooltipProvider>
     </ErrorBoundary>
   );

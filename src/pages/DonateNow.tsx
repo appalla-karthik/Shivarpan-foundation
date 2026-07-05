@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  applyCampaignFundingToProjects,
+  type CampaignFundingSummary,
   findRecentProjectByIdentifier,
   mapRecentProjectsFromApi,
   recentProjects,
@@ -69,6 +71,7 @@ const DonateNow = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [apiProjects, setApiProjects] = useState<RecentProjectsApiItem[] | null>(null);
+  const [campaignFunding, setCampaignFunding] = useState<CampaignFundingSummary | null>(null);
   const [donationMode, setDonationMode] = useState<DonationMode>("one_time");
   const [selectedAmount, setSelectedAmount] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState("");
@@ -96,9 +99,19 @@ const DonateNow = () => {
       });
   }, []);
 
+  useEffect(() => {
+    getJson<CampaignFundingSummary>("donations/funding-summary/", { cache: false })
+      .then((response) => {
+        setCampaignFunding(response);
+      })
+      .catch((error) => {
+        reportApiError("Unable to fetch donation funding summary", error);
+      });
+  }, []);
+
   const availableProjects = useMemo(
-    () => mapRecentProjectsFromApi(apiProjects),
-    [apiProjects],
+    () => applyCampaignFundingToProjects(mapRecentProjectsFromApi(apiProjects), campaignFunding),
+    [apiProjects, campaignFunding],
   );
 
   const selectedProject = useMemo(() => {
@@ -154,6 +167,8 @@ const DonateNow = () => {
         name,
         email,
         phone,
+        project_slug: selectedProject?.slug ?? "",
+        project_title: selectedProject?.title ?? "",
         message: donationMessage,
       });
 
@@ -189,6 +204,9 @@ const DonateNow = () => {
                   ? "Auto-debit mandate is authorized. Razorpay will charge monthly as per your selected amount."
                   : `Payment verified. Status: ${verification.status}`,
             });
+            getJson<CampaignFundingSummary>("donations/funding-summary/", { cache: false })
+              .then((response) => setCampaignFunding(response))
+              .catch((error) => reportApiError("Unable to refresh campaign funding", error));
             resetForm();
           } catch (verifyError) {
             toast({

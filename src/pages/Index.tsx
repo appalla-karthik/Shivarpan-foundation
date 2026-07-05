@@ -1,27 +1,26 @@
+import LazyMotion from "@/lib/lazyMotion";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import {
-  ArrowRight,
-  Award,
-  BookOpen,
-  Calendar,
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  Compass,
-  FileText,
-  Heart,
-  Handshake,
-  Mail,
-  MapPin,
-  Mic,
-  Play,
-  Sparkles,
-  Star,
-  TreePine,
-  Users,
-} from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.js";
+import Award from "lucide-react/dist/esm/icons/award.js";
+import BookOpen from "lucide-react/dist/esm/icons/book-open.js";
+import Calendar from "lucide-react/dist/esm/icons/calendar.js";
+import Camera from "lucide-react/dist/esm/icons/camera.js";
+import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.js";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.js";
+import Compass from "lucide-react/dist/esm/icons/compass.js";
+import FileText from "lucide-react/dist/esm/icons/file-text.js";
+import Heart from "lucide-react/dist/esm/icons/heart.js";
+import Handshake from "lucide-react/dist/esm/icons/handshake.js";
+import Mail from "lucide-react/dist/esm/icons/mail.js";
+import MapPin from "lucide-react/dist/esm/icons/map-pin.js";
+import Mic from "lucide-react/dist/esm/icons/mic.js";
+import Play from "lucide-react/dist/esm/icons/play.js";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles.js";
+import Star from "lucide-react/dist/esm/icons/star.js";
+import TreePine from "lucide-react/dist/esm/icons/tree-pine.js";
+import Users from "lucide-react/dist/esm/icons/users.js";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
 import aboutHero from "@/assets/about-hero-optimized.jpg";
@@ -37,15 +36,17 @@ import adrsKLogo from "@/assets/ADRSK-small.jpg";
 import hotelLogo from "@/assets/hotel-small.jpg";
 import { aboutContent, homeHeroContent } from "@/data/siteContent";
 import {
+  applyCampaignFundingToProjects,
+  type CampaignFundingSummary,
   mapRecentProjectsFromApi,
   type RecentProject,
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
 import { assetUrl, getJson, reportApiError } from "@/lib/api";
 
-const ImpactCounter = lazy(() => import("@/components/ImpactCounter"));
-const CinematicImpactStory = lazy(() => import("@/components/CinematicImpactStory"));
-const ProjectFundingActions = lazy(() => import("@/components/ProjectFundingActions"));
+import ImpactCounter from "@/components/ImpactCounter";
+import CinematicImpactStory from "@/components/CinematicImpactStory";
+import ProjectFundingActions from "@/components/ProjectFundingActions";
 
 const heroStats = [
   { value: "500+", label: "Lives Transformed" },
@@ -186,6 +187,13 @@ const partners = [
     url: "https://theblueshotels.com",
   },
   {
+    name: "AURAVISTA",
+    focus: "Resort Partner",
+    tag: "Luxury Partner",
+    monogram: "AURAVISTA",
+    glow: "from-primary/20 via-accent/10 to-transparent",
+  },
+  {
     name: "Shivarpan Foundation",
     focus: "Community Partner",
     tag: "Foundation",
@@ -226,6 +234,19 @@ const testimonials = [
   },
 ];
 
+function makeResponsiveSrcSet(url: string, ext: 'webp' | 'avif') {
+  if (!url) return undefined;
+  // remove query string
+  const clean = url.split('?')[0];
+  // If the url refers to the src/assets bundle, point to the optimized folder
+  let base = clean.replace(/\.(jpe?g|png|jpeg)$/i, '');
+  if (clean.includes('/src/assets/')) {
+    base = clean.replace('/src/assets/', '/src/assets/optimized/') .replace(/\.(jpe?g|png|jpeg)$/i, '');
+  }
+  const sizes = [400, 800, 1200, 1800];
+  return sizes.map((s) => `${base}-${s}.${ext} ${s}w`).join(', ');
+}
+
 type MediaAsset = {
   id: number;
   title: string;
@@ -255,6 +276,7 @@ type HomepageProjectCard = {
   raised: number;
   goal: number;
   image: string;
+  description: string;
 };
 
 type HomepagePayload = {
@@ -336,6 +358,7 @@ const transformProjectsForHomepage = (
     raised: project.spent,
     goal: project.budget,
     image: project.image,
+    description: project.objective,
   }));
 
 const getSmallProjectImage = (image: string) => {
@@ -347,10 +370,10 @@ const getSmallProjectImage = (image: string) => {
 };
 
 const sectionTagClass =
-  "inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary";
+  "inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary";
 const sectionTitleClass = "mt-3 font-display text-2xl font-bold text-foreground sm:text-3xl md:text-4xl";
 const darkSectionTagClass =
-  "inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-foreground";
+  "inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground";
 const darkSectionTitleClass = "mt-3 font-display text-2xl font-bold text-primary-foreground sm:text-3xl md:text-4xl";
 
 const Index = () => {
@@ -359,6 +382,7 @@ const Index = () => {
   const [galleryItems, setGalleryItems] = useState<GalleryItemPayload[]>([]);
   const [storyItems, setStoryItems] = useState<StoryItemPayload[]>([]);
   const [projectItems, setProjectItems] = useState<ProjectPayload[]>([]);
+  const [campaignFunding, setCampaignFunding] = useState<CampaignFundingSummary | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventPayload[]>([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroMediaReady, setHeroMediaReady] = useState(false);
@@ -390,10 +414,11 @@ const Index = () => {
 
     const loadGallery = async () => {
       try {
-        const data = await getJson<GalleryItemPayload[]>("gallery/", { cache: true, cacheTTL: 20 * 60 * 1000 }); // 20 minutes cache
+        const data = await getJson<any>("gallery/", { cache: true, cacheTTL: 20 * 60 * 1000 }); // 20 minutes cache
         if (isMounted) {
+          const items = Array.isArray(data) ? data : (data?.results || []);
           setGalleryItems(
-            data.map((item) => ({
+            items.map((item: any) => ({
               ...item,
               image: assetUrl(item.image),
             })),
@@ -459,6 +484,30 @@ const Index = () => {
     return () => {
       isMounted = false;
       window.clearTimeout(nonCriticalDataTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFunding = () => {
+      getJson<CampaignFundingSummary>("donations/funding-summary/", { cache: false })
+        .then((response) => {
+          if (isMounted) {
+            setCampaignFunding(response);
+          }
+        })
+        .catch((error) => {
+          reportApiError("Unable to fetch homepage campaign funding", error);
+        });
+    };
+
+    fetchFunding();
+    const intervalId = window.setInterval(fetchFunding, 15000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -573,8 +622,12 @@ const Index = () => {
   );
 
   const normalizedRecentProjects = useMemo(
-    () => mapRecentProjectsFromApi(projectItems.length > 0 ? projectItems : null),
-    [projectItems],
+    () =>
+      applyCampaignFundingToProjects(
+        mapRecentProjectsFromApi(projectItems.length > 0 ? projectItems : null),
+        campaignFunding,
+      ),
+    [campaignFunding, projectItems],
   );
 
   const projectsData = useMemo(() => {
@@ -635,41 +688,56 @@ const Index = () => {
           }
 
           return (
-            <motion.img
-              key={`${slide.url}-${index}`}
-              src={slide.url}
-              alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding={index === 0 ? "sync" : "async"}
-              width={1800}
-              height={1013}
-              initial={false}
-              animate={{
-                opacity: index === activeHeroSlide ? 1 : 0,
-                scale: index === activeHeroSlide ? 1.04 : 1,
-              }}
-              transition={{ duration: 1.15, ease: "easeInOut" }}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+            <picture key={`${slide.url}-${index}`}>
+              <source
+                type="image/avif"
+                srcSet={makeResponsiveSrcSet(slide.url as string, 'avif')}
+                sizes="(max-width: 1200px) 100vw, 1800px"
+              />
+              <source
+                type="image/webp"
+                srcSet={makeResponsiveSrcSet(slide.url as string, 'webp')}
+                sizes="(max-width: 1200px) 100vw, 1800px"
+              />
+              <motion.img
+                src={slide.url as string}
+                alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding={index === 0 ? "sync" : "async"}
+                fetchpriority={index === 0 ? "high" : undefined}
+                width={1800}
+                height={1013}
+                initial={false}
+                animate={{
+                  opacity: index === activeHeroSlide ? 1 : 0,
+                  scale: index === activeHeroSlide ? 1.04 : 1,
+                }}
+                transition={{ duration: 1.15, ease: "easeInOut" }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </picture>
           );
         })}
         <div className="absolute inset-0 hero-overlay opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/65 via-foreground/40 to-transparent" />
 
-        <motion.div
+        <LazyMotion
+          as="div"
           animate={{ x: [0, 18, 0], y: [0, -12, 0], opacity: [0.2, 0.45, 0.2] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -top-16 right-8 w-72 h-72 md:w-80 md:h-80 rounded-full bg-accent/25 blur-3xl"
         />
-        <motion.div
+        <LazyMotion
+          as="div"
           animate={{ x: [0, -22, 0], y: [0, 14, 0], opacity: [0.15, 0.35, 0.15] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           className="absolute bottom-8 left-1/4 w-60 h-60 md:w-72 md:h-72 rounded-full bg-primary/20 blur-3xl"
         />
         <div className="pointer-events-none absolute inset-0">
           {heroParticles.map((particle) => (
-            <motion.span
+            <LazyMotion
               key={`${particle.left}-${particle.top}`}
+              as="span"
               aria-hidden
               style={{ left: particle.left, top: particle.top }}
               animate={{ y: [0, -14, 0], opacity: [0.2, 0.85, 0.2], scale: [1, 1.25, 1] }}
@@ -692,23 +760,25 @@ const Index = () => {
               {homeHeroContent.badge}
             </motion.div>
 
-            <motion.h1
+            <LazyMotion
+              as="h1"
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
               className="mb-6 text-center font-display text-4xl font-bold leading-tight text-primary-foreground sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
             >
               {heroTitle}
-            </motion.h1>
+            </LazyMotion>
 
-            <motion.p
+            <LazyMotion
+              as="p"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               className="mx-auto mb-8 max-w-4xl text-center text-base leading-relaxed text-primary-foreground/85 sm:text-lg lg:mx-0 lg:text-left"
             >
               {heroDescription}
-            </motion.p>
+            </LazyMotion>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -775,7 +845,7 @@ const Index = () => {
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-foreground/10 via-transparent to-accent/10" />
               <div className="relative">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent">
                     <Sparkles className="h-3.5 w-3.5" />
                     Upcoming Event
                   </span>
@@ -792,7 +862,7 @@ const Index = () => {
                     <p className="mt-3 line-clamp-3 text-sm leading-6 text-primary-foreground/78">
                       {activeEvent.subtitle || activeEvent.description}
                     </p>
-                    <div className="mt-5 grid gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/80">
+                    <div className="mt-5 grid gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground/80">
                       <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/12 px-3 py-2">
                         <Calendar className="h-3.5 w-3.5 text-accent" />
                         {activeEvent.date_label || "Upcoming"}
@@ -928,34 +998,34 @@ const Index = () => {
 
               <div className="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <Heart className="h-3.5 w-3.5 text-accent" /> Total Raised
                   </p>
                   <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalRaised)}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">Across visible homepage projects</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Across visible homepage projects</p>
                 </div>
                 <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <TreePine className="h-3.5 w-3.5 text-primary" /> Overall Target
                   </p>
                   <p className="font-display text-xl font-bold text-foreground">{formatCurrency(totalGoal)}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">Live goal pulled project-wise</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Live goal pulled project-wise</p>
                 </div>
                 <div className="group rounded-2xl border border-border/80 bg-background/80 px-4 py-3 shadow-[0_16px_42px_-36px_hsl(var(--foreground))] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_54px_-38px_hsl(var(--foreground))]">
-                  <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <Award className="h-3.5 w-3.5 text-accent" /> Completion
                   </p>
                   <p className="font-display text-xl font-bold text-foreground">
                     {completionRate}% ({fullyFunded}/{projectsData.length} Achieved)
                   </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">Transparent funding status</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Transparent funding status</p>
                 </div>
               </div>
             </div>
           </AnimatedSection>
 
           <div className="grid gap-6 xl:grid-cols-12">
-            <AnimatedSection className="xl:col-span-8">
+            <AnimatedSection className={projectsData.length > 1 ? "xl:col-span-8" : "xl:col-span-12"}>
               <motion.article
                 whileHover={{ y: -6 }}
                 transition={{ type: "spring", stiffness: 180, damping: 20 }}
@@ -974,11 +1044,11 @@ const Index = () => {
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/88 via-foreground/22 to-transparent" />
-                    <div className="absolute left-4 top-4 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground backdrop-blur-sm">
+                    <div className="absolute left-4 top-4 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground backdrop-blur-sm">
                       Spotlight
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 rounded-[1.4rem] border border-primary-foreground/18 bg-primary-foreground/12 p-4 text-primary-foreground backdrop-blur-md">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
                         Featured Project
                       </p>
                       <p className="mt-1 font-display text-2xl font-bold leading-none">
@@ -990,10 +1060,10 @@ const Index = () => {
 
                   <div className="lg:col-span-3 p-5 md:p-7 lg:p-8">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+                      <p className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
                         {featuredProject.category}
                       </p>
-                      <p className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                      <p className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                         Donation Open
                       </p>
                     </div>
@@ -1001,21 +1071,20 @@ const Index = () => {
                       {featuredProject.title}
                     </h3>
                     <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                      Project-wise data, image, target, and donation route stay tied to the same recent-project record.
-                      Share it instantly or contribute directly to this chapter.
+                      {featuredProject.description}
                     </p>
 
                     <div className="mt-6 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
-                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Raised</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Raised</p>
                         <p className="mt-1 text-sm font-bold text-primary sm:text-base">{formatCurrency(featuredProject.raised)}</p>
                       </div>
                       <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
-                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Goal</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Goal</p>
                         <p className="mt-1 text-sm font-bold text-foreground sm:text-base">{formatCurrency(featuredProject.goal)}</p>
                       </div>
                       <div className="rounded-2xl border border-border/80 bg-background/75 p-3 shadow-[0_16px_38px_-36px_hsl(var(--foreground))]">
-                        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Left</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Left</p>
                         <p className="mt-1 text-sm font-bold text-foreground sm:text-base">{formatCurrency(featuredShortfall)}</p>
                       </div>
                     </div>
@@ -1049,83 +1118,85 @@ const Index = () => {
               </motion.article>
             </AnimatedSection>
 
-            <AnimatedSection className="xl:col-span-4">
-              <div className="grid h-full gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                {projectsData.slice(1).map((project, i) => {
-                  const progress = project.goal > 0 ? Math.min((project.raised / project.goal) * 100, 100) : 0;
-                  const shortfall = Math.max(project.goal - project.raised, 0);
+            {projectsData.length > 1 && (
+              <AnimatedSection className="xl:col-span-4">
+                <div className="grid h-full gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                  {projectsData.slice(1).map((project, i) => {
+                    const progress = project.goal > 0 ? Math.min((project.raised / project.goal) * 100, 100) : 0;
+                    const shortfall = Math.max(project.goal - project.raised, 0);
 
-                  return (
-                    <motion.article
-                      key={project.title}
-                      whileHover={{ y: -5, x: 2 }}
-                      transition={{ duration: 0.22 }}
-                      className="group relative overflow-hidden rounded-[1.7rem] border border-border/85 bg-[linear-gradient(135deg,hsl(var(--card)/0.98)_0%,hsl(var(--background)/0.94)_60%,hsl(var(--muted)/0.55)_100%)] p-4 shadow-[0_22px_62px_-48px_hsl(var(--foreground))] transition-all duration-300 hover:border-primary/25 hover:shadow-[0_30px_78px_-48px_hsl(var(--foreground))] sm:p-5"
-                    >
-                      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary/12 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
-                      <div className="pointer-events-none absolute bottom-3 right-4 font-display text-6xl font-bold leading-none text-foreground/[0.04]">
-                        {String(i + 2).padStart(2, "0")}
-                      </div>
-                      <div className="relative flex gap-4">
-                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 shadow-[0_18px_44px_-32px_hsl(var(--foreground))]">
-                          <img
-                            src={getSmallProjectImage(project.image)}
-                            alt={project.title}
-                            width={96}
-                            height={96}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-foreground/45 via-transparent to-transparent" />
-                          <span className="absolute bottom-2 left-2 rounded-full bg-primary-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-foreground">
-                            {progress.toFixed(0)}%
-                          </span>
+                    return (
+                      <motion.article
+                        key={project.title}
+                        whileHover={{ y: -5, x: 2 }}
+                        transition={{ duration: 0.22 }}
+                        className="group relative overflow-hidden rounded-[1.7rem] border border-border/85 bg-[linear-gradient(135deg,hsl(var(--card)/0.98)_0%,hsl(var(--background)/0.94)_60%,hsl(var(--muted)/0.55)_100%)] p-4 shadow-[0_22px_62px_-48px_hsl(var(--foreground))] transition-all duration-300 hover:border-primary/25 hover:shadow-[0_30px_78px_-48px_hsl(var(--foreground))] sm:p-5"
+                      >
+                        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary/12 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+                        <div className="pointer-events-none absolute bottom-3 right-4 font-display text-6xl font-bold leading-none text-foreground/[0.04]">
+                          {String(i + 2).padStart(2, "0")}
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">{project.category}</p>
-                            <p className="text-[10px] font-semibold text-muted-foreground">#{i + 2}</p>
+                        <div className="relative flex gap-4">
+                          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 shadow-[0_18px_44px_-32px_hsl(var(--foreground))]">
+                            <img
+                              src={getSmallProjectImage(project.image)}
+                              alt={project.title}
+                              width={96}
+                              height={96}
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-foreground/45 via-transparent to-transparent" />
+                            <span className="absolute bottom-2 left-2 rounded-full bg-primary-foreground/90 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-foreground">
+                              {progress.toFixed(0)}%
+                            </span>
                           </div>
-                          <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-foreground">
-                            {project.title}
-                          </h3>
-                          <p className="mt-1.5 text-xs font-medium text-muted-foreground">
-                            {shortfall === 0 ? "Goal achieved" : `${formatCurrency(shortfall)} left`}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="relative mt-4 rounded-[1.15rem] border border-border/70 bg-background/65 p-3">
-                        <div className="mb-1.5 flex items-center justify-between text-xs">
-                          <span className="font-semibold text-primary">{formatCurrency(project.raised)}</span>
-                          <span className="text-muted-foreground">Goal {formatCurrency(project.goal)}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <p className="rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">{project.category}</p>
+                              <p className="text-xs font-semibold text-muted-foreground">#{i + 2}</p>
+                            </div>
+                            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-foreground">
+                              {project.title}
+                            </h3>
+                            <p className="mt-1.5 text-xs font-medium text-muted-foreground">
+                              {shortfall === 0 ? "Goal achieved" : `${formatCurrency(shortfall)} left`}
+                            </p>
+                          </div>
                         </div>
-                        <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${progress}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.9, ease: "easeOut", delay: i * 0.12 }}
-                            className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+
+                        <div className="relative mt-4 rounded-[1.15rem] border border-border/70 bg-background/65 p-3">
+                          <div className="mb-1.5 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-primary">{formatCurrency(project.raised)}</span>
+                            <span className="text-muted-foreground">Goal {formatCurrency(project.goal)}</span>
+                          </div>
+                          <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: `${progress}%` }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 0.9, ease: "easeOut", delay: i * 0.12 }}
+                              className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                            />
+                          </div>
+                        </div>
+                        <Suspense fallback={null}>
+                          <ProjectFundingActions
+                            title={project.title}
+                            slug={project.slug}
+                            donateLabel="Donate Now"
+                            compact
+                            className="mt-3"
                           />
-                        </div>
-                      </div>
-                      <Suspense fallback={null}>
-                        <ProjectFundingActions
-                          title={project.title}
-                          slug={project.slug}
-                          donateLabel="Donate Now"
-                          compact
-                          className="mt-3"
-                        />
-                      </Suspense>
-                    </motion.article>
-                  );
-                })}
-              </div>
-            </AnimatedSection>
+                        </Suspense>
+                      </motion.article>
+                    );
+                  })}
+                </div>
+              </AnimatedSection>
+            )}
           </div>
         </div>
       </section>
@@ -1317,7 +1388,7 @@ const Index = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/15 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-100" />
                       <div className="pointer-events-none absolute inset-y-0 -left-2 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-primary-foreground/35 to-transparent opacity-0 transition-all duration-700 group-hover:left-[110%] group-hover:opacity-100" />
                       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground sm:text-[13px]">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground sm:text-sm">
                           {visual.label}
                         </p>
                         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary-foreground/35 bg-primary-foreground/15 backdrop-blur-sm">
@@ -1629,7 +1700,7 @@ const Index = () => {
                         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
                         <p className="truncate text-xs text-muted-foreground">{item.role}</p>
                       </div>
-                      <span className="ml-auto inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                      <span className="ml-auto inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                         {item.tag}
                       </span>
                     </div>

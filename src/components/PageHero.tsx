@@ -9,7 +9,7 @@ interface PageHeroProps {
 const PageHero = ({ title, subtitle, image }: PageHeroProps) => (
   <section className="relative h-[45vh] min-h-[350px] flex items-center justify-center overflow-hidden">
     {image ? (
-      <img src={image} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+      <img src={image} alt={title} fetchpriority="high" loading="eager" decoding="sync" className="absolute inset-0 w-full h-full object-cover" />
     ) : (
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(circle_at_20%_80%,hsl(var(--accent)/0.25),transparent_52%),linear-gradient(135deg,hsl(var(--foreground))_0%,hsl(var(--primary))_45%,hsl(var(--accent))_100%)]" />
     )}

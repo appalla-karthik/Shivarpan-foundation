@@ -249,7 +249,7 @@ const TeamMembers = () => {
                           <p className="mt-1 text-sm text-muted-foreground">{member.position}</p>
                           <motion.span
                             whileHover={{ y: -1 }}
-                            className="mt-3 inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary"
+                            className="mt-3 inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
                           >
                             {team.label}
                           </motion.span>

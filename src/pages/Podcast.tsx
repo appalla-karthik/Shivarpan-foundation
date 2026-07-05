@@ -172,7 +172,7 @@ const Podcast = () => {
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
-                    <div className="absolute left-3 top-3 rounded-full border border-background/30 bg-background/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background backdrop-blur">
+                    <div className="absolute left-3 top-3 rounded-full border border-background/30 bg-background/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-background backdrop-blur">
                       Featured
                     </div>
                   </div>
@@ -261,7 +261,7 @@ const Podcast = () => {
                 </div>
 
                 <div className="p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
                     {episode.category}
                   </p>
                   <h4 className="mt-2 line-clamp-2 font-display text-xl font-semibold leading-tight text-foreground">

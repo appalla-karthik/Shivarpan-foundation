@@ -257,7 +257,7 @@ const EMagazineArticles = () => {
                   )}
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/18 to-transparent" />
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/35 to-transparent" />
-                  <span className="absolute left-3 top-3 rounded-full border border-white/25 bg-black/35 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur">
+                  <span className="absolute left-3 top-3 rounded-full border border-white/25 bg-black/35 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white backdrop-blur">
                     Magazine Story
                   </span>
                   <Button
@@ -272,7 +272,7 @@ const EMagazineArticles = () => {
                 </div>
 
                 <div className="flex flex-1 flex-col p-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f59e0b]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#f59e0b]">
                     Story #{magazine.id}
                   </p>
                   <h2

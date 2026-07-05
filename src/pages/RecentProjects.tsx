@@ -3,6 +3,8 @@ import { gsap } from "gsap";
 import RecentProjectsIntro from "@/components/recent-projects/RecentProjectsIntro";
 import RecentProjectsShowcase from "@/components/recent-projects/RecentProjectsShowcase";
 import {
+  applyCampaignFundingToProjects,
+  type CampaignFundingSummary,
   mapRecentProjectsFromApi,
   recentIntroGridImages,
   type RecentProjectsApiItem,
@@ -14,6 +16,7 @@ const introColCount = 7;
 
 const RecentProjects = () => {
   const [apiProjects, setApiProjects] = useState<RecentProjectsApiItem[] | null>(null);
+  const [campaignFunding, setCampaignFunding] = useState<CampaignFundingSummary | null>(null);
 
   useEffect(() => {
     getJson<RecentProjectsApiItem[]>("projects/")
@@ -25,9 +28,33 @@ const RecentProjects = () => {
       });
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFunding = () => {
+      getJson<CampaignFundingSummary>("donations/funding-summary/", { cache: false })
+        .then((response) => {
+          if (isMounted) {
+            setCampaignFunding(response);
+          }
+        })
+        .catch((error) => {
+          reportApiError("Unable to fetch campaign funding", error);
+        });
+    };
+
+    fetchFunding();
+    const intervalId = window.setInterval(fetchFunding, 15000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const showcaseProjects = useMemo(
-    () => mapRecentProjectsFromApi(apiProjects),
-    [apiProjects],
+    () => applyCampaignFundingToProjects(mapRecentProjectsFromApi(apiProjects), campaignFunding),
+    [apiProjects, campaignFunding],
   );
 
   const introSectionRef = useRef<HTMLElement | null>(null);

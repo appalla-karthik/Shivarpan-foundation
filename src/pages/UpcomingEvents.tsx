@@ -77,7 +77,7 @@ const UpcomingEvents = () => {
           <AnimatedSection className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-5">
             <div className="lg:col-span-3">
               <div className="rounded-[1.6rem] border border-border/80 bg-card/90 p-6 shadow-[0_24px_70px_-52px_hsl(var(--foreground))] backdrop-blur-sm">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   <Sparkles className="h-3.5 w-3.5 text-accent" />
                   Featured Event
                 </div>
@@ -123,7 +123,7 @@ const UpcomingEvents = () => {
                   className="h-80 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent opacity-90" />
-                <span className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-foreground">
+                <span className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground">
                   Tap to view full size
                 </span>
               </button>

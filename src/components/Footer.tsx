@@ -247,7 +247,12 @@ const Footer = () => {
             >
               Terms &amp; Conditions
             </Link>
-            <span className="text-xs opacity-50">Refund Policy</span>
+            <Link
+              to="/refund-policy"
+              className="text-xs opacity-50 transition-opacity hover:opacity-100"
+            >
+              Refund Policy
+            </Link>
           </div>
         </div>
       </div>
