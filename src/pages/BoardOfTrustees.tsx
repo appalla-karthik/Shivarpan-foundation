@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import PageHero from "@/components/PageHero";
 import AnimatedSection from "@/components/AnimatedSection";
-import aboutHero from "@/assets/about-hero.png";
+import aboutHero from "@/assets/about-hero-optimized.jpg";
 import deepakSharmaPhoto from "@/assets/deepak sharma.webp";
 import vaishnaviSaxenaPhoto from "@/assets/vaishnavi saxena.webp";
 

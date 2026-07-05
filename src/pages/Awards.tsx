@@ -12,7 +12,7 @@ import {
 import { Link } from "react-router-dom";
 import AnimatedSection from "@/components/AnimatedSection";
 import campaignFood from "@/assets/campaign-food.jpg";
-import aboutHero from "@/assets/about-hero.png";
+import aboutHero from "@/assets/about-hero-optimized.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
 import campaignEnvironment from "@/assets/campaign-environment.jpg";

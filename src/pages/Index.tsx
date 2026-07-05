@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Award,
@@ -24,17 +24,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
-import ImpactCounter from "@/components/ImpactCounter";
-import CinematicImpactStory from "@/components/CinematicImpactStory";
-import ProjectFundingActions from "@/components/ProjectFundingActions";
-import aboutHero from "@/assets/about-hero.png";
+import aboutHero from "@/assets/about-hero-optimized.jpg";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
 import campaignEnvironment from "@/assets/campaign-environment.jpg";
-import adrsKLogo from "@/assets/ADRSK.png";
-import shivarpanLogo from "@/assets/shivarpan-logo.jpeg";
-import hotelLogo from "@/assets/hotel.png";
+import adrsKLogo from "@/assets/ADRSK-small.jpg";
+import shivarpanLogo from "@/assets/shivarpan-logo-small.jpg";
+import hotelLogo from "@/assets/hotel-small.jpg";
 import { aboutContent, homeHeroContent } from "@/data/siteContent";
 import {
   mapRecentProjectsFromApi,
@@ -42,6 +39,10 @@ import {
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
 import { assetUrl, getJson, reportApiError } from "@/lib/api";
+
+const ImpactCounter = lazy(() => import("@/components/ImpactCounter"));
+const CinematicImpactStory = lazy(() => import("@/components/CinematicImpactStory"));
+const ProjectFundingActions = lazy(() => import("@/components/ProjectFundingActions"));
 
 const heroStats = [
   { value: "500+", label: "Lives Transformed" },
@@ -99,7 +100,7 @@ const galleryShots = [
 ];
 
 const fallbackHeroSlides = [
-  { title: "Community Work", url: aboutHero, alt_text: "Shivarpan Foundation community work" },
+  { title: "Community Work", url: "/hero-lcp.jpg", alt_text: "Shivarpan Foundation community work" },
   { title: "Education Support", url: campaignEducation, alt_text: "Education support by Shivarpan Foundation" },
   { title: "Food Distribution", url: campaignFood, alt_text: "Food distribution by Shivarpan Foundation" },
   { title: "Healthcare Outreach", url: campaignHealth, alt_text: "Healthcare outreach by Shivarpan Foundation" },
@@ -166,6 +167,8 @@ const partners = [
     monogram: "ZD",
     glow: "from-accent/20 via-primary/10 to-transparent",
     logoUrl: adrsKLogo,
+    logoWidth: 360,
+    logoHeight: 145,
     url: "https://adrsk.onrender.com/",
   },
   {
@@ -175,6 +178,8 @@ const partners = [
     monogram: "Hotel",
     glow: "from-primary/20 via-primary/5 to-transparent",
     logoUrl: hotelLogo,
+    logoWidth: 220,
+    logoHeight: 178,
     url: "https://theblueshotels.com",
   },
   {
@@ -496,6 +501,8 @@ const Index = () => {
           ...fallback,
           name: logo.title || fallback.name,
           logoUrl: logo.url,
+          logoWidth: "logoWidth" in fallback ? fallback.logoWidth : undefined,
+          logoHeight: "logoHeight" in fallback ? fallback.logoHeight : undefined,
         };
       });
     }
@@ -608,7 +615,9 @@ const Index = () => {
             src={slide.url}
             alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
             loading={index === 0 ? "eager" : "lazy"}
-            fetchPriority={index === 0 ? "high" : "auto"}
+            decoding={index === 0 ? "sync" : "async"}
+            width={1800}
+            height={1013}
             initial={false}
             animate={{
               opacity: index === activeHeroSlide ? 1 : 0,
@@ -833,7 +842,15 @@ const Index = () => {
                   }`}
                   aria-label={`Open hero slide ${index + 1}`}
                 >
-                  <img src={slide.url} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={slide.url}
+                    alt=""
+                    width={96}
+                    height={56}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -924,6 +941,10 @@ const Index = () => {
                     <img
                       src={featuredProject.image}
                       alt={featuredProject.title}
+                      width={720}
+                      height={720}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/88 via-foreground/22 to-transparent" />
@@ -989,12 +1010,14 @@ const Index = () => {
                       </div>
                     </div>
 
-                    <ProjectFundingActions
-                      title={featuredProject.title}
-                      slug={featuredProject.slug}
-                      donateLabel="Donate Now"
-                      className="mt-5"
-                    />
+                    <Suspense fallback={null}>
+                      <ProjectFundingActions
+                        title={featuredProject.title}
+                        slug={featuredProject.slug}
+                        donateLabel="Donate Now"
+                        className="mt-5"
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </motion.article>
@@ -1022,6 +1045,10 @@ const Index = () => {
                           <img
                             src={project.image}
                             alt={project.title}
+                            width={96}
+                            height={96}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/45 via-transparent to-transparent" />
@@ -1059,13 +1086,15 @@ const Index = () => {
                           />
                         </div>
                       </div>
-                      <ProjectFundingActions
-                        title={project.title}
-                        slug={project.slug}
-                        donateLabel="Donate Now"
-                        compact
-                        className="mt-3"
-                      />
+                      <Suspense fallback={null}>
+                        <ProjectFundingActions
+                          title={project.title}
+                          slug={project.slug}
+                          donateLabel="Donate Now"
+                          compact
+                          className="mt-3"
+                        />
+                      </Suspense>
                     </motion.article>
                   );
                 })}
@@ -1141,14 +1170,18 @@ const Index = () => {
                   transition={{ duration: 3.2, repeat: Infinity, repeatDelay: 1.4, ease: "linear", delay: index * 0.2 }}
                   className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-primary/18 to-transparent"
                 />
-                <ImpactCounter end={item.end} suffix={item.suffix} label={item.label} icon={item.icon} delay={index * 0.1} />
+                <Suspense fallback={null}>
+                  <ImpactCounter end={item.end} suffix={item.suffix} label={item.label} icon={item.icon} delay={index * 0.1} />
+                </Suspense>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <CinematicImpactStory />
+      <Suspense fallback={null}>
+        <CinematicImpactStory />
+      </Suspense>
 
       {/* About */}
       <section className="relative py-16 md:py-24 overflow-hidden">
@@ -1249,6 +1282,10 @@ const Index = () => {
                       <img
                         src={visual.image}
                         alt={visual.alt}
+                        width={640}
+                        height={420}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/15 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-100" />
@@ -1304,6 +1341,10 @@ const Index = () => {
                 <img
                   src={galleryShotsData[0].image}
                   alt={galleryShotsData[0].title}
+                  width={900}
+                  height={520}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
               </motion.div>
@@ -1319,6 +1360,10 @@ const Index = () => {
                     <img
                       src={shot.image}
                       alt={shot.title}
+                      width={480}
+                      height={280}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   </motion.div>
@@ -1344,7 +1389,15 @@ const Index = () => {
             <AnimatedSection className="lg:col-span-3">
               <motion.div whileHover={{ y: -6 }} className="rounded-3xl overflow-hidden border border-border bg-card h-full shadow-lg group">
                 <div className="relative h-64 sm:h-72 md:h-80">
-                  <img src={storiesData[0].image} alt={storiesData[0].title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <img
+                    src={storiesData[0].image}
+                    alt={storiesData[0].title}
+                    width={720}
+                    height={420}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
                   <p className="absolute bottom-3 left-3 text-primary-foreground text-xs uppercase tracking-wider">Featured Story</p>
                 </div>
@@ -1427,7 +1480,15 @@ const Index = () => {
                     aria-label={partner.name}
                   >
                     {"logoUrl" in partner && partner.logoUrl ? (
-                      <img src={partner.logoUrl} alt={partner.name} className="h-14 w-auto object-contain" />
+                      <img
+                        src={partner.logoUrl}
+                        alt={partner.name}
+                        width={"logoWidth" in partner && partner.logoWidth ? partner.logoWidth : 224}
+                        height={"logoHeight" in partner && partner.logoHeight ? partner.logoHeight : 56}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-14 w-auto object-contain"
+                      />
                     ) : (
                       <span className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                         {partner.monogram}
@@ -1498,6 +1559,10 @@ const Index = () => {
                           <img
                             src={item.media.url}
                             alt={`${item.name} testimonial`}
+                            width={420}
+                            height={236}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
                         )
@@ -1521,7 +1586,15 @@ const Index = () => {
                     <div className="relative mt-4 flex items-center gap-3 px-4 pb-4">
                       <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
                         {"photoUrl" in item && item.photoUrl ? (
-                          <img src={item.photoUrl} alt={item.name} className="h-full w-full object-cover" />
+                          <img
+                            src={item.photoUrl}
+                            alt={item.name}
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           item.monogram
                         )}

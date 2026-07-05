@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import PageHero from "@/components/PageHero";
 import AnimatedSection from "@/components/AnimatedSection";
-import aboutHero from "@/assets/about-hero.png";
+import aboutHero from "@/assets/about-hero-optimized.jpg";
 import { assetUrl, getJson, reportApiError } from "@/lib/api";
 
 type MediaAssetPayload = {

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import shivarpanLogo from "@/assets/shivarpan-logo.jpeg";
+import shivarpanLogo from "@/assets/shivarpan-logo-small.jpg";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -31,6 +31,8 @@ const Navbar = () => {
               <img
                 src={shivarpanLogo}
                 alt="Shivarpan Foundation logo"
+                width={420}
+                height={103}
                 className="h-10 sm:h-11 w-auto object-contain"
               />
             </div>

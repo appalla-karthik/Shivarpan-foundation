@@ -17,9 +17,35 @@ const sanitizeInput = (input: string): string => {
 
 const validatePath = (path: string): boolean => {
   if (typeof path !== 'string') return false;
-  // Allow only alphanumeric, hyphens, underscores, and forward slashes
-  const validPathPattern = /^[a-zA-Z0-9\-_\/]+$/;
-  return validPathPattern.test(path) && path.length <= 200;
+
+  if (
+    path.length > 300 ||
+    path.includes('\\') ||
+    path.startsWith('//') ||
+    /^[a-z][a-z0-9+.-]*:/i.test(path)
+  ) {
+    return false;
+  }
+
+  try {
+    const url = new URL(path.replace(/^\/+/, ''), 'https://local.invalid/');
+    const validPathPattern = /^[a-zA-Z0-9\-_\/]*$/;
+    const validQueryPattern = /^[a-zA-Z0-9\-_.:, ]*$/;
+
+    if (!validPathPattern.test(url.pathname)) {
+      return false;
+    }
+
+    for (const [key, value] of url.searchParams.entries()) {
+      if (!validQueryPattern.test(key) || !validQueryPattern.test(value)) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const isValidUrl = (url: string): boolean => {

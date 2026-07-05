@@ -1,52 +1,38 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { HashRouter, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
-import LoadingScreen from "./components/LoadingScreen";
-import UpcomingEventPopup from "./components/UpcomingEventPopup";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Index from "./pages/Index";
-import DynamicPage from "./pages/DynamicPage";
-import About from "./pages/About";
-import Gallery from "./pages/Gallery";
-import NewsStories from "./pages/NewsStories";
-import RecentProjects from "./pages/RecentProjects";
-import Awards from "./pages/Awards";
-import Podcast from "./pages/Podcast";
-import PodcastEpisode from "./pages/PodcastEpisode";
-import Contact from "./pages/Contact";
-import DonateNow from "./pages/DonateNow";
-import UpcomingEvents from "./pages/UpcomingEvents";
-import EMagazineArticles from "./pages/EMagazineArticles";
-import MagazineViewer from "./pages/MagazineViewer";
-import BoardOfTrustees from "./pages/BoardOfTrustees";
-import TeamMembers from "./pages/TeamMembers";
-import NotFound from "./pages/NotFound";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsAndConditions from "./pages/TermsAndConditions";
-import AdminPanel from "./pages/AdminPanel";
 
-// Optimized QueryClient with better defaults
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime)
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
+const LoadingScreen = lazy(() => import("./components/LoadingScreen"));
+const UpcomingEventPopup = lazy(() => import("./components/UpcomingEventPopup"));
+const Index = lazy(() => import("./pages/Index"));
+const DynamicPage = lazy(() => import("./pages/DynamicPage"));
+const About = lazy(() => import("./pages/About"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const NewsStories = lazy(() => import("./pages/NewsStories"));
+const RecentProjects = lazy(() => import("./pages/RecentProjects"));
+const Awards = lazy(() => import("./pages/Awards"));
+const Podcast = lazy(() => import("./pages/Podcast"));
+const PodcastEpisode = lazy(() => import("./pages/PodcastEpisode"));
+const Contact = lazy(() => import("./pages/Contact"));
+const DonateNow = lazy(() => import("./pages/DonateNow"));
+const UpcomingEvents = lazy(() => import("./pages/UpcomingEvents"));
+const EMagazineArticles = lazy(() => import("./pages/EMagazineArticles"));
+const MagazineViewer = lazy(() => import("./pages/MagazineViewer"));
+const BoardOfTrustees = lazy(() => import("./pages/BoardOfTrustees"));
+const TeamMembers = lazy(() => import("./pages/TeamMembers"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+
+const RouteFallback = () => (
+  <div className="min-h-[60vh] bg-background" aria-label="Loading page" />
+);
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -98,25 +84,28 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {showLoader ? (
+      <TooltipProvider>
+        <Toaster />
+        {showLoader ? (
+          <Suspense fallback={<div className="min-h-screen bg-foreground" />}>
             <LoadingScreen onComplete={() => setShowLoader(false)} />
-          ) : (
-            <HashRouter
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
+          </Suspense>
+        ) : (
+          <HashRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Suspense fallback={null}>
               <UpcomingEventPopup />
+            </Suspense>
+            <Suspense fallback={<RouteFallback />}>
               <AppRoutes />
-            </HashRouter>
-          )}
-        </TooltipProvider>
-      </QueryClientProvider>
+            </Suspense>
+          </HashRouter>
+        )}
+      </TooltipProvider>
     </ErrorBoundary>
   );
 };

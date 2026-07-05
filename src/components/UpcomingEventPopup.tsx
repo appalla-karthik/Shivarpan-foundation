@@ -95,7 +95,7 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 220, damping: 22 }}
-            className="relative h-[600px] w-auto overflow-hidden rounded-[1.5rem] bg-transparent text-white shadow-[0_40px_120px_-60px_hsl(var(--foreground))]"
+            className="relative h-[min(600px,86vh)] w-[min(600px,92vw)] overflow-hidden rounded-[1.5rem] bg-transparent text-white shadow-[0_40px_120px_-60px_hsl(var(--foreground))]"
           >
             <button
               type="button"
@@ -110,7 +110,10 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
               <img
                 src={event.poster_image?.url || EVENT_POSTER_URL}
                 alt="Upcoming event poster"
-                className="h-full max-h-[600px] w-auto max-w-[92vw] rounded-[0.85rem] object-contain shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+                width={600}
+                height={600}
+                decoding="async"
+                className="h-full w-full rounded-[0.85rem] object-contain shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
               />
             </div>
           </motion.div>

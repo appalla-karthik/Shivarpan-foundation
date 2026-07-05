@@ -4,7 +4,7 @@ import { BookOpen, Stethoscope, Heart, TreePine, Users, Shirt, ArrowRight } from
 import { Button } from "@/components/ui/button";
 import PageHero from "@/components/PageHero";
 import AnimatedSection from "@/components/AnimatedSection";
-import aboutHero from "@/assets/about-hero.png";
+import aboutHero from "@/assets/about-hero-optimized.jpg";
 
 const causes = [
   {

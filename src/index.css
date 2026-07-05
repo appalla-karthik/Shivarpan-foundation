@@ -94,9 +94,11 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    position: relative;
   }
 
   html {
+    position: relative;
     scrollbar-gutter: stable;
   }
 

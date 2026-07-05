@@ -8,9 +8,9 @@ import {
   Youtube,
   Linkedin,
 } from "lucide-react";
-import shivarpanLogo from "@/assets/shivarpan-logo.jpeg";
+import shivarpanLogo from "@/assets/shivarpan-logo-small.jpg";
 import registrationImage from "@/assets/registration.jpeg";
-import footerImage from "../../foundation/static/img/footer_image.png";
+import footerImage from "@/assets/footer-image-optimized.jpg";
 import { aboutContent } from "@/data/siteContent";
 
 const socialLinks = [
@@ -57,6 +57,10 @@ const Footer = () => {
         <img
           src={registrationImage}
           alt="Shivarpan Foundation registration and certification details"
+          width={1600}
+          height={900}
+          loading="lazy"
+          decoding="async"
           className="mx-auto w-full max-w-[86rem] scale-[1.08] object-contain"
         />
       </div>
@@ -70,6 +74,10 @@ const Footer = () => {
         <img
           src={footerImage}
           alt=""
+          width={1800}
+          height={400}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-fill opacity-[0.78] brightness-[1.08] contrast-[1.08] saturate-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,20,28,0.38)_0%,rgba(8,20,28,0.08)_36%,rgba(8,20,28,0.34)_100%)]" />
@@ -93,6 +101,10 @@ const Footer = () => {
               <img
                 src={shivarpanLogo}
                 alt="Shivarpan Foundation logo"
+                width={420}
+                height={103}
+                loading="lazy"
+                decoding="async"
                 className="h-11 w-auto object-contain"
               />
             </div>

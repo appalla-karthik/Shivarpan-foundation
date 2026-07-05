@@ -32,20 +32,43 @@ export default defineConfig(() => ({
         // Code splitting for better performance - only include used chunks
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (normalizedId.includes('/three/')) {
+              return 'three';
             }
-            if (id.includes('react-router')) {
-              return 'router';
+            if (normalizedId.includes('/gsap/')) {
+              return 'gsap';
             }
-            if (id.includes('framer-motion') || id.includes('lucide-react')) {
-              return 'ui';
+            if (normalizedId.includes('/pdfjs-dist/')) {
+              return 'pdf';
             }
-            if (id.includes('recharts')) {
+            if (normalizedId.includes('/lottie-react/') || normalizedId.includes('/lottie-web/')) {
+              return 'lottie';
+            }
+            if (normalizedId.includes('/react-pageflip/')) {
+              return 'pageflip';
+            }
+            if (normalizedId.includes('/recharts/')) {
               return 'charts';
             }
-            if (id.includes('lottie')) {
-              return 'lottie';
+            if (normalizedId.includes('/react-router') || normalizedId.includes('/@remix-run/router/')) {
+              return 'router';
+            }
+            if (
+              normalizedId.includes('/framer-motion/') ||
+              normalizedId.includes('/lucide-react/') ||
+              normalizedId.includes('/@radix-ui/')
+            ) {
+              return 'ui';
+            }
+            if (
+              normalizedId.includes('/react/') ||
+              normalizedId.includes('/react-dom/') ||
+              normalizedId.includes('/scheduler/') ||
+              normalizedId.includes('/@vitejs/')
+            ) {
+              return 'vendor';
             }
             return 'vendor';
           }
