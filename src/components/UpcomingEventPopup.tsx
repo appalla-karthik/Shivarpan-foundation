@@ -46,11 +46,7 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
   const [event, setEvent] = useState<UpcomingEventPayload>(fallbackEvent);
 
   useEffect(() => {
-    if (enabled) {
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-    }
+    setIsOpen(enabled);
   }, [enabled]);
 
   useEffect(() => {
@@ -95,25 +91,24 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 220, damping: 22 }}
-            className="relative h-[min(600px,86vh)] w-[min(600px,92vw)] overflow-hidden rounded-[1.5rem] bg-transparent text-white shadow-[0_40px_120px_-60px_hsl(var(--foreground))]"
+            className="relative inline-flex max-h-[88vh] max-w-[94vw] rounded-[2rem] border border-white/18 bg-white/10 p-3 text-white shadow-[0_42px_130px_-58px_hsl(var(--foreground))] backdrop-blur-md"
           >
-            <button
-              type="button"
-              onClick={handleClose}
-              className="absolute right-2 top-2 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white transition-colors hover:bg-black/80"
-              aria-label="Close popup"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex h-full w-auto items-center justify-center bg-transparent">
+            <div className="relative inline-flex max-h-[calc(88vh-1.5rem)] max-w-[calc(94vw-1.5rem)] items-center justify-center overflow-hidden rounded-[1.55rem] bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_18px_54px_rgba(0,0,0,0.38)]">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-black/68 text-white shadow-[0_12px_28px_rgba(0,0,0,0.32)] backdrop-blur-md transition-colors hover:bg-black/85"
+                aria-label="Close popup"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <img
                 src={event.poster_image?.url || EVENT_POSTER_URL}
                 alt="Upcoming event poster"
                 width={600}
                 height={600}
                 decoding="async"
-                className="h-full w-full rounded-[0.85rem] object-contain shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+                className="block h-auto max-h-[calc(88vh-1.5rem)] w-auto max-w-[calc(94vw-1.5rem)] rounded-[1.35rem] object-contain"
               />
             </div>
           </motion.div>

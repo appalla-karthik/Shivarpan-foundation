@@ -1,5 +1,7 @@
 type JsonRecord = Record<string, unknown>;
 const API_UNAVAILABLE_COOLDOWN_MS = 30000;
+const LOCAL_API_TIMEOUT_MS = 250;
+const REMOTE_API_TIMEOUT_MS = 4500;
 let apiUnavailableUntil = 0;
 
 // Cache for API responses
@@ -120,6 +122,21 @@ export const apiUrl = (path: string) => {
   return `${API_BASE_URL}/${path.replace(/^\/+/, "")}`;
 };
 
+const getRequestTimeoutMs = () => {
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(?::\d+)?\/api\b/i.test(API_BASE_URL)) {
+    return LOCAL_API_TIMEOUT_MS;
+  }
+
+  return REMOTE_API_TIMEOUT_MS;
+};
+
+const createTimeoutSignal = () => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), getRequestTimeoutMs());
+
+  return { controller, timeoutId };
+};
+
 export const assetUrl = (path?: string | null) => {
   if (!path) {
     return "";
@@ -170,6 +187,7 @@ const isNetworkError = (error: unknown) =>
   error instanceof TypeError ||
   (error instanceof Error &&
     (error.message === "Failed to fetch" ||
+      error.name === "AbortError" ||
       ("code" in error && error.code === "ERR_NETWORK")));
 
 export const reportApiError = (label: string, error: unknown) => {
@@ -235,6 +253,7 @@ export async function postJson<TResponse = JsonRecord>(
   }));
 
   let response: Response;
+  const { controller, timeoutId } = createTimeoutSignal();
   try {
     response = await fetch(apiUrl(path), {
       method: "POST",
@@ -247,6 +266,7 @@ export async function postJson<TResponse = JsonRecord>(
       credentials: 'same-origin',
       mode: 'cors',
       cache: 'no-cache',
+      signal: controller.signal,
     });
     clearApiUnavailable();
   } catch (error) {
@@ -255,6 +275,8 @@ export async function postJson<TResponse = JsonRecord>(
       throw createApiUnavailableError();
     }
     throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
   let data: TResponse | JsonRecord | null = null;
@@ -291,6 +313,7 @@ export async function getJson<TResponse = JsonRecord>(path: string, options?: { 
   }
 
   let response: Response;
+  const { controller, timeoutId } = createTimeoutSignal();
   try {
     response = await fetch(apiUrl(path), {
       method: "GET",
@@ -302,6 +325,7 @@ export async function getJson<TResponse = JsonRecord>(path: string, options?: { 
       credentials: 'same-origin',
       mode: 'cors',
       cache: options?.cache === false ? 'no-store' : 'default',
+      signal: controller.signal,
     });
     clearApiUnavailable();
   } catch (error) {
@@ -310,6 +334,8 @@ export async function getJson<TResponse = JsonRecord>(path: string, options?: { 
       throw createApiUnavailableError();
     }
     throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
   let data: TResponse | JsonRecord | null = null;

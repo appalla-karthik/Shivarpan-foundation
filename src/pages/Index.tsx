@@ -29,8 +29,11 @@ import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
 import campaignEnvironment from "@/assets/campaign-environment.jpg";
+import campaignFoodThumb from "@/assets/campaign-food-thumb.jpg";
+import campaignEducationThumb from "@/assets/campaign-education-thumb.jpg";
+import campaignHealthThumb from "@/assets/campaign-health-thumb.jpg";
+import campaignEnvironmentThumb from "@/assets/campaign-environment-thumb.jpg";
 import adrsKLogo from "@/assets/ADRSK-small.jpg";
-import shivarpanLogo from "@/assets/shivarpan-logo-small.jpg";
 import hotelLogo from "@/assets/hotel-small.jpg";
 import { aboutContent, homeHeroContent } from "@/data/siteContent";
 import {
@@ -100,10 +103,10 @@ const galleryShots = [
 ];
 
 const fallbackHeroSlides = [
-  { title: "Community Work", url: "/hero-lcp.jpg", alt_text: "Shivarpan Foundation community work" },
-  { title: "Education Support", url: campaignEducation, alt_text: "Education support by Shivarpan Foundation" },
-  { title: "Food Distribution", url: campaignFood, alt_text: "Food distribution by Shivarpan Foundation" },
-  { title: "Healthcare Outreach", url: campaignHealth, alt_text: "Healthcare outreach by Shivarpan Foundation" },
+  { title: "Community Work", url: "/hero-lcp.jpg", thumbUrl: "/hero-lcp.jpg", alt_text: "Shivarpan Foundation community work" },
+  { title: "Education Support", url: campaignEducation, thumbUrl: campaignEducationThumb, alt_text: "Education support by Shivarpan Foundation" },
+  { title: "Food Distribution", url: campaignFood, thumbUrl: campaignFoodThumb, alt_text: "Food distribution by Shivarpan Foundation" },
+  { title: "Healthcare Outreach", url: campaignHealth, thumbUrl: campaignHealthThumb, alt_text: "Healthcare outreach by Shivarpan Foundation" },
 ];
 
 const stories = [
@@ -335,6 +338,14 @@ const transformProjectsForHomepage = (
     image: project.image,
   }));
 
+const getSmallProjectImage = (image: string) => {
+  if (image === campaignFood) return campaignFoodThumb;
+  if (image === campaignEducation) return campaignEducationThumb;
+  if (image === campaignHealth) return campaignHealthThumb;
+  if (image === campaignEnvironment) return campaignEnvironmentThumb;
+  return image;
+};
+
 const sectionTagClass =
   "inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary";
 const sectionTitleClass = "mt-3 font-display text-2xl font-bold text-foreground sm:text-3xl md:text-4xl";
@@ -350,6 +361,7 @@ const Index = () => {
   const [projectItems, setProjectItems] = useState<ProjectPayload[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventPayload[]>([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
+  const [heroMediaReady, setHeroMediaReady] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -430,20 +442,23 @@ const Index = () => {
       }
     };
 
-    // Load data in parallel for better performance
-    Promise.all([
-      loadHomepage(),
-      loadTestimonials(),
-      loadGallery(),
-      loadStoryItems(),
-      loadProjects(),
-      loadUpcomingEvents(),
-    ]).catch((error) => {
-      console.error("Error loading initial data:", error);
-    });
+    void loadHomepage();
+
+    const nonCriticalDataTimer = window.setTimeout(() => {
+      Promise.all([
+        loadTestimonials(),
+        loadGallery(),
+        loadStoryItems(),
+        loadProjects(),
+        loadUpcomingEvents(),
+      ]).catch((error) => {
+        console.error("Error loading non-critical data:", error);
+      });
+    }, 12000);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(nonCriticalDataTimer);
     };
   }, []);
 
@@ -480,10 +495,15 @@ const Index = () => {
 
     const intervalId = window.setInterval(() => {
       setActiveHeroSlide((current) => (current + 1) % heroSlides.length);
-    }, 5200);
+    }, 12000);
 
     return () => window.clearInterval(intervalId);
   }, [heroSlides]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => setHeroMediaReady(true), 9000);
+    return () => window.clearTimeout(timerId);
+  }, []);
 
   const activeEvent = upcomingEvents[activeHeroSlide % Math.max(upcomingEvents.length, 1)];
   const nextHeroSlide = () => {
@@ -609,24 +629,30 @@ const Index = () => {
       {/* Hero */}
       <section className="relative flex min-h-[calc(100svh-5rem)] items-center overflow-hidden md:min-h-[calc(100vh-5rem)]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(circle_at_20%_80%,hsl(var(--accent)/0.25),transparent_52%),linear-gradient(135deg,hsl(var(--foreground))_0%,hsl(var(--primary))_45%,hsl(var(--accent))_100%)]" />
-        {heroSlides.map((slide, index) => (
-          <motion.img
-            key={`${slide.url}-${index}`}
-            src={slide.url}
-            alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
-            loading={index === 0 ? "eager" : "lazy"}
-            decoding={index === 0 ? "sync" : "async"}
-            width={1800}
-            height={1013}
-            initial={false}
-            animate={{
-              opacity: index === activeHeroSlide ? 1 : 0,
-              scale: index === activeHeroSlide ? 1.04 : 1,
-            }}
-            transition={{ duration: 1.15, ease: "easeInOut" }}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ))}
+        {heroSlides.map((slide, index) => {
+          if (!heroMediaReady && index !== activeHeroSlide) {
+            return null;
+          }
+
+          return (
+            <motion.img
+              key={`${slide.url}-${index}`}
+              src={slide.url}
+              alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding={index === 0 ? "sync" : "async"}
+              width={1800}
+              height={1013}
+              initial={false}
+              animate={{
+                opacity: index === activeHeroSlide ? 1 : 0,
+                scale: index === activeHeroSlide ? 1.04 : 1,
+              }}
+              transition={{ duration: 1.15, ease: "easeInOut" }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          );
+        })}
         <div className="absolute inset-0 hero-overlay opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/65 via-foreground/40 to-transparent" />
 
@@ -843,7 +869,7 @@ const Index = () => {
                   aria-label={`Open hero slide ${index + 1}`}
                 >
                   <img
-                    src={slide.url}
+                    src={(slide as { thumbUrl?: string }).thumbUrl || slide.url}
                     alt=""
                     width={96}
                     height={56}
@@ -1043,7 +1069,7 @@ const Index = () => {
                       <div className="relative flex gap-4">
                         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 shadow-[0_18px_44px_-32px_hsl(var(--foreground))]">
                           <img
-                            src={project.image}
+                            src={getSmallProjectImage(project.image)}
                             alt={project.title}
                             width={96}
                             height={96}

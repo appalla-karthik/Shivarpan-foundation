@@ -7,7 +7,6 @@ import Footer from "./components/Footer";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-const LoadingScreen = lazy(() => import("./components/LoadingScreen"));
 const UpcomingEventPopup = lazy(() => import("./components/UpcomingEventPopup"));
 const Index = lazy(() => import("./pages/Index"));
 const DynamicPage = lazy(() => import("./pages/DynamicPage"));
@@ -33,6 +32,8 @@ const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const RouteFallback = () => (
   <div className="min-h-[60vh] bg-background" aria-label="Loading page" />
 );
+
+const POPUP_MOUNT_DELAY_MS = 60000;
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -80,31 +81,34 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  const [showLoader, setShowLoader] = useState(true);
+  const [showPopup, setShowPopup] = useState(false);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => setShowPopup(true), POPUP_MOUNT_DELAY_MS);
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, []);
 
   return (
     <ErrorBoundary>
       <TooltipProvider>
         <Toaster />
-        {showLoader ? (
-          <Suspense fallback={<div className="min-h-screen bg-foreground" />}>
-            <LoadingScreen onComplete={() => setShowLoader(false)} />
-          </Suspense>
-        ) : (
-          <HashRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
+        <HashRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          {showPopup ? (
             <Suspense fallback={null}>
               <UpcomingEventPopup />
             </Suspense>
-            <Suspense fallback={<RouteFallback />}>
-              <AppRoutes />
-            </Suspense>
-          </HashRouter>
-        )}
+          ) : null}
+          <Suspense fallback={<RouteFallback />}>
+            <AppRoutes />
+          </Suspense>
+        </HashRouter>
       </TooltipProvider>
     </ErrorBoundary>
   );
