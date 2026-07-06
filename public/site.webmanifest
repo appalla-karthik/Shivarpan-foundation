@@ -1,0 +1,18 @@
+{
+  "name": "Shivarpan Charitable Foundation",
+  "short_name": "Shivarpan",
+  "description": "Shivarpan Charitable Foundation empowers communities through education, healthcare, food security, and environmental sustainability.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0b526d",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
