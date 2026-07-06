@@ -16,6 +16,17 @@ def env_list(name: str, default: list[str] | None = None) -> list[str]:
     return list(default or [])
 
 
+def unique_list(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for item in items:
+        normalized = item.strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            values.append(normalized)
+    return values
+
+
 def load_env_file(path: Path) -> None:
     if not path.exists():
         return
@@ -44,11 +55,18 @@ USE_WHITENOISE = importlib.util.find_spec("whitenoise") is not None
 
 TINYMCE_API_KEY = os.environ.get("TINYMCE_API_KEY", "")
 
+production_hosts = [
+    "shivarpanfoundation.org",
+    "www.shivarpanfoundation.org",
+    "shivarpan-foundation.onrender.com",
+    "shivarpan-foundation-backend.onrender.com",
+]
+
 ALLOWED_HOSTS_ENV = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
 if ALLOWED_HOSTS_ENV:
-    ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_ENV.split(",") if h.strip()]
+    ALLOWED_HOSTS = unique_list([h.strip() for h in ALLOWED_HOSTS_ENV.split(",") if h.strip()] + production_hosts)
 else:
-    ALLOWED_HOSTS = ["*"] if DEBUG else []
+    ALLOWED_HOSTS = ["*"] if DEBUG else production_hosts
 
 # -------------------------------------------------
 # INSTALLED APPS
@@ -219,6 +237,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 if USE_WHITENOISE:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # -------------------------------------------------
 # MEDIA FILES (Images, uploads)
@@ -254,11 +280,15 @@ default_cors_origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://shivarpanfoundation.org",
+    "https://www.shivarpanfoundation.org",
+    "https://shivarpan-foundation.onrender.com",
+    "https://shivarpan-foundation-backend.onrender.com",
 ]
 
 CORS_ALLOWED_ORIGINS = env_list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
-    default_cors_origins if DEBUG else [],
+    default_cors_origins if DEBUG else default_cors_origins[6:],
 )
 
 CORS_ALLOW_CREDENTIALS = True
@@ -266,7 +296,19 @@ CORS_ALLOW_CREDENTIALS = True
 # -------------------------------------------------
 # CSRF (for POST requests from frontend)
 # -------------------------------------------------
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
+default_csrf_origins = [
+    "https://shivarpanfoundation.org",
+    "https://www.shivarpanfoundation.org",
+    "https://shivarpan-foundation.onrender.com",
+    "https://shivarpan-foundation-backend.onrender.com",
+]
+
+CSRF_TRUSTED_ORIGINS = unique_list(
+    env_list("DJANGO_CSRF_TRUSTED_ORIGINS", default_csrf_origins) + default_csrf_origins
+)
+USE_X_FORWARDED_HOST = True
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -8,6 +8,7 @@ import {
   Youtube,
   Linkedin,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import shivarpanLogo from "@/assets/shivarpan-logo-tiny.jpg";
 import registrationImage from "@/assets/registration.jpeg";
 import footerImage from "@/assets/footer-image-optimized.jpg";
@@ -48,6 +49,8 @@ const governanceLinks = [
   { to: "/board-of-trustees", label: "Board of Trustees" },
   { to: "/team-members", label: "Team Members" },
 ];
+
+const donationUrl = "https://www.shivarpanfoundation.org/#/donate-now";
 
 const Footer = () => {
   return (
@@ -230,6 +233,32 @@ const Footer = () => {
       </div>
 
       <div className="relative z-10 border-t border-primary-foreground/10">
+        <Link
+          to="/donate-now"
+          aria-label="Donate to Shivarpan Foundation"
+          className="absolute right-4 top-[-8.5rem] hidden w-[9.25rem] rounded-[1.35rem] border border-white/70 bg-white p-3 text-center text-slate-900 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.65)] ring-1 ring-slate-900/5 transition-transform duration-300 hover:-translate-y-1 sm:right-6 md:block lg:right-8"
+        >
+          <div className="mb-2 flex items-center justify-center gap-2 text-[0.62rem] font-black uppercase tracking-[0.08em] text-slate-600">
+            <span>BHIM</span>
+            <span className="text-slate-300">|</span>
+            <span>UPI</span>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-2">
+            <QRCodeSVG
+              value={donationUrl}
+              size={104}
+              level="M"
+              includeMargin={false}
+              className="h-full w-full"
+            />
+          </div>
+          <p className="mt-2 text-[0.52rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+            Scan to Donate
+          </p>
+          <p className="mt-2 text-[0.63rem] font-black uppercase tracking-[0.34em] text-slate-700">
+            Donate Now
+          </p>
+        </Link>
         <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 pb-5 pt-[8.75rem] text-center sm:px-6 sm:pt-[9.75rem] lg:pt-[11.75rem]">
           <p className="text-xs leading-5 opacity-50">
             (c) 2026 Shivarpan Charitable Foundation. All rights reserved.
