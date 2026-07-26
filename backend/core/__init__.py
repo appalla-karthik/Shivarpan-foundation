@@ -1,7 +1,10 @@
 
 from __future__ import annotations
 
-import pymysql
+import os
 
 
-pymysql.install_as_MySQLdb()
+if os.environ.get("DJANGO_DB_ENGINE", "sqlite").strip().lower() == "mysql":
+    import pymysql
+
+    pymysql.install_as_MySQLdb()

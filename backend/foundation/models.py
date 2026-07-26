@@ -46,6 +46,7 @@ class MediaAsset(TimeStampedModel):
         OTHER = "other", "Other"
 
     title = models.CharField(max_length=255, blank=True)
+    category = models.CharField(max_length=120, blank=True)
     file = models.FileField(upload_to="uploads/%Y/%m/")
     file_name = models.CharField(max_length=255, blank=True)
     content_type = models.CharField(max_length=100, blank=True)
@@ -265,6 +266,11 @@ class Project(PublishableModel, SeoFields):
         Testimonial, null=True, blank=True, on_delete=models.SET_NULL, related_name="projects"
     )
 
+    def save(self, *args, **kwargs):
+        if self.impact_numbers is None:
+            self.impact_numbers = {}
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return self.title
 
@@ -322,6 +328,9 @@ class Donation(TimeStampedModel):
         default=DonationType.ONE_TIME,
     )
     payment_mode_preference = models.CharField(max_length=50, blank=True)
+    donation_category = models.CharField(max_length=80, blank=True)
+    atg_requested = models.BooleanField(default=False)
+    pan_number = models.CharField(max_length=10, blank=True)
     message = models.TextField(blank=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.CREATED)
     receipt = models.CharField(max_length=80, unique=True)
@@ -341,6 +350,22 @@ class Donation(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.donor_name} - Rs {self.amount} ({self.get_donation_type_display()})"
+
+
+class AwardNomination(TimeStampedModel):
+    nominee_full_name = models.CharField(max_length=255)
+    mobile_number = models.CharField(max_length=20)
+    email = models.EmailField()
+    company_name = models.CharField(max_length=255)
+    award_show = models.ForeignKey("Award", null=True, blank=True, on_delete=models.SET_NULL, related_name="nominations")
+    nominee_profile_photo = models.FileField(upload_to="award_nominations/%Y/%m/", blank=True)
+    company_full_address = models.TextField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.nominee_full_name} - {self.company_name}"
 
 
 class DonationPaymentLog(TimeStampedModel):
@@ -495,6 +520,7 @@ class Story(PublishableModel, SeoFields):
 
 class Award(TimeStampedModel):
     title = models.CharField(max_length=255)
+    category = models.CharField(max_length=120, blank=True)
     presenter = models.CharField(max_length=255, blank=True)
     year = models.CharField(max_length=20, blank=True)
     summary = models.TextField(blank=True)
@@ -505,6 +531,7 @@ class Award(TimeStampedModel):
         MediaAsset, blank=True, related_name="award_detail_images"
     )
     sort_order = models.PositiveIntegerField(default=0)
+    is_upcoming = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
     class Meta:

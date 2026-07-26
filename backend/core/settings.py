@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import importlib.util
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent
@@ -184,6 +185,21 @@ WSGI_APPLICATION = "core.wsgi.application"
 ASGI_APPLICATION = "core.asgi.application"
 
 # -------------------------------------------------
+# EMAIL
+# -------------------------------------------------
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") not in {"0", "false", "False"}
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "info@shivarpanfoundation.org")
+ADMIN_NOTIFICATION_EMAIL = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "info@shivarpanfoundation.org")
+
+# -------------------------------------------------
 # DATABASE
 # -------------------------------------------------
 db_engine = os.environ.get("DJANGO_DB_ENGINE", "sqlite").strip().lower()
@@ -292,6 +308,9 @@ CORS_ALLOWED_ORIGINS = env_list(
 )
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "cache-control",
+]
 
 # -------------------------------------------------
 # CSRF (for POST requests from frontend)

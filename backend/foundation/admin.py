@@ -15,6 +15,7 @@ from core.admin_site import admin_site
 from foundation.models import (
     Article,
     Award,
+    AwardNomination,
     Category,
     ContactSubmission,
     Donation,
@@ -102,12 +103,15 @@ class ProjectAdminForm(forms.ModelForm):
         model = Project
         fields = "__all__"
 
+    def clean_impact_numbers(self):
+        return self.cleaned_data.get("impact_numbers") or {}
+
 
 @admin.register(MediaAsset, site=admin_site)
 class MediaAssetAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "media_type", "created_at")
-    list_filter = ("media_type", "created_at")
-    search_fields = ("title", "file", "alt_text")
+    list_display = ("__str__", "category", "media_type", "created_at")
+    list_filter = ("category", "media_type", "created_at")
+    search_fields = ("title", "category", "file", "alt_text")
 
 
 class PageSectionInline(admin.StackedInline):
@@ -256,13 +260,60 @@ class TeamMemberAdmin(admin.ModelAdmin):
     fields = ("state", "name", "position", "photo", "note", "sort_order", "is_active")
 
 
+class AwardAdminForm(forms.ModelForm):
+    bulk_detail_image_category = forms.ChoiceField(
+        required=False,
+        label="Add detail images by media category",
+        help_text="Choose a Media Asset category and save. All image assets from that category will be added to Detail images.",
+    )
+
+    class Meta:
+        model = Award
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        categories = (
+            MediaAsset.objects.filter(media_type=MediaAsset.MediaType.IMAGE)
+            .exclude(category="")
+            .order_by("category")
+            .values_list("category", flat=True)
+            .distinct()
+        )
+        self.fields["bulk_detail_image_category"].choices = [("", "-- Select category --")] + [
+            (category, category) for category in categories
+        ]
+
+
 @admin.register(Award, site=admin_site)
 class AwardAdmin(admin.ModelAdmin):
-    list_display = ("title", "presenter", "year", "sort_order", "is_active", "created_at")
-    list_filter = ("is_active", "year")
-    search_fields = ("title", "presenter", "year")
+    form = AwardAdminForm
+    list_display = ("title", "category", "presenter", "year", "is_upcoming", "sort_order", "is_active", "created_at")
+    list_filter = ("is_upcoming", "is_active", "category", "year")
+    search_fields = ("title", "category", "presenter", "year")
+    fields = (
+        "title",
+        "category",
+        "presenter",
+        "year",
+        "summary",
+        "image",
+        "detail_images",
+        "bulk_detail_image_category",
+        "is_upcoming",
+        "sort_order",
+        "is_active",
+    )
     autocomplete_fields = ("image",)
     filter_horizontal = ("detail_images",)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        category = form.cleaned_data.get("bulk_detail_image_category")
+        if category and form.instance.pk:
+            assets = MediaAsset.objects.filter(category=category, media_type=MediaAsset.MediaType.IMAGE)
+            form.instance.detail_images.add(*assets)
+            self.message_user(request, f"Added {assets.count()} detail images from '{category}'.")
 
 @admin.register(PodcastEpisode, site=admin_site)
 class PodcastEpisodeAdmin(RichTextAdminMixin, admin.ModelAdmin):
@@ -445,16 +496,20 @@ class DonationAdmin(admin.ModelAdmin):
         "donor_email",
         "amount",
         "donation_type",
+        "donation_category",
+        "atg_requested",
         "status",
         "razorpay_payment_id",
         "created_at",
     )
-    list_filter = ("donation_type", "status", "created_at")
+    list_filter = ("donation_type", "donation_category", "atg_requested", "status", "created_at")
     inlines = [DonationPaymentLogInline]
     search_fields = (
         "donor_name",
         "donor_email",
         "donor_phone",
+        "pan_number",
+        "donation_category",
         "receipt",
         "razorpay_order_id",
         "razorpay_subscription_id",
@@ -471,6 +526,15 @@ class DonationAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+
+@admin.register(AwardNomination, site=admin_site)
+class AwardNominationAdmin(admin.ModelAdmin):
+    list_display = ("nominee_full_name", "company_name", "email", "mobile_number", "award_show", "created_at")
+    list_filter = ("award_show", "created_at")
+    search_fields = ("nominee_full_name", "company_name", "email", "mobile_number", "company_full_address")
+    autocomplete_fields = ("award_show",)
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(DonationPaymentLog, site=admin_site)

@@ -1,12 +1,14 @@
 from __future__ import annotations
+import re
 import uuid
 
 from foundation.models import GalleryItem
 from django.conf import settings
 from django.db import IntegrityError
+from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
 from django.utils import timezone
-from rest_framework import generics, serializers, viewsets
+from rest_framework import generics, parsers, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -23,6 +25,7 @@ from .razorpay_client import (
 
 from foundation.models import (
     Article,
+    AwardNomination,
     Category,
     ContactSubmission,
     Donation,
@@ -43,6 +46,23 @@ from foundation.models import (
     Testimonial,
     UpcomingEvent,
 )
+
+
+def notify_admin(subject: str, lines: list[str], reply_to: str = "", attachments: list | None = None) -> None:
+    try:
+        message = EmailMessage(
+            subject=subject,
+            body="\n".join(lines),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[getattr(settings, "ADMIN_NOTIFICATION_EMAIL", "info@shivarpanfoundation.org")],
+            reply_to=[reply_to] if reply_to else None,
+        )
+        for uploaded in attachments or []:
+            uploaded.seek(0)
+            message.attach(uploaded.name, uploaded.read(), getattr(uploaded, "content_type", None) or "application/octet-stream")
+        message.send(fail_silently=True)
+    except Exception:
+        pass
 
 
 class MediaAssetSerializer(serializers.ModelSerializer):
@@ -202,12 +222,14 @@ class AwardSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "category",
             "presenter",
             "year",
             "summary",
             "image",
             "detail_images",
             "sort_order",
+            "is_upcoming",
             "is_active",
             "created_at",
             "updated_at",
@@ -409,7 +431,7 @@ class UpcomingEventViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="active")
     def active(self, request):
-        event = self.get_queryset().filter(is_active=True).first()
+        event = self.get_queryset().filter(is_active=True, sort_order=0).first()
         if not event:
             return Response({})
         return Response(self.get_serializer(event).data)
@@ -510,6 +532,22 @@ class ContactSubmissionSerializer(serializers.ModelSerializer):
 class ContactSubmissionCreateAPIView(generics.CreateAPIView):
     serializer_class = ContactSubmissionSerializer
 
+    def perform_create(self, serializer):
+        submission = serializer.save()
+        notify_admin(
+            "New website contact message",
+            [
+                f"Name: {submission.name}",
+                f"Email: {submission.email}",
+                f"Phone: {submission.phone}",
+                f"Company: {submission.company}",
+                f"Subject: {submission.subject}",
+                "",
+                submission.message,
+            ],
+            reply_to=submission.email,
+        )
+
 
 class SubscriberSerializer(serializers.ModelSerializer):
     class Meta:
@@ -522,12 +560,64 @@ class SubscriberCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         try:
-            serializer.save()
+            subscriber = serializer.save()
         except IntegrityError:
             Subscriber.objects.filter(email=serializer.validated_data["email"]).update(
                 name=serializer.validated_data.get("name", ""),
                 source=serializer.validated_data.get("source", ""),
             )
+            subscriber = Subscriber.objects.filter(email=serializer.validated_data["email"]).first()
+        if subscriber:
+            notify_admin(
+                "New newsletter subscriber",
+                [
+                    f"Email: {subscriber.email}",
+                    f"Name: {subscriber.name}",
+                    f"Source: {subscriber.source}",
+                ],
+                reply_to=subscriber.email,
+            )
+
+
+class AwardNominationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AwardNomination
+        fields = [
+            "id",
+            "nominee_full_name",
+            "mobile_number",
+            "email",
+            "company_name",
+            "award_show",
+            "nominee_profile_photo",
+            "company_full_address",
+            "created_at",
+        ]
+
+
+class AwardNominationCreateAPIView(generics.CreateAPIView):
+    serializer_class = AwardNominationSerializer
+    parser_classes = (parsers.MultiPartParser, parsers.FormParser)
+
+    def perform_create(self, serializer):
+        nomination = serializer.save()
+        award_title = nomination.award_show.title if nomination.award_show else "Not selected"
+        attachments = [nomination.nominee_profile_photo] if nomination.nominee_profile_photo else []
+        notify_admin(
+            "New award nomination",
+            [
+                f"Nominee Full Name: {nomination.nominee_full_name}",
+                f"Mobile Number: {nomination.mobile_number}",
+                f"Email: {nomination.email}",
+                f"Company Name: {nomination.company_name}",
+                f"Award Show: {award_title}",
+                "",
+                "Company Full Address:",
+                nomination.company_full_address,
+            ],
+            reply_to=nomination.email,
+            attachments=attachments,
+        )
 
 
 class DonationCheckoutSerializer(serializers.Serializer):
@@ -538,12 +628,24 @@ class DonationCheckoutSerializer(serializers.Serializer):
     email = serializers.EmailField()
     phone = serializers.CharField(max_length=32)
     payment_mode = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    donation_category = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    atg_requested = serializers.BooleanField(required=False, default=False)
+    pan_number = serializers.CharField(max_length=10, required=False, allow_blank=True)
     message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def validate_currency(self, value):
         if value.upper() != "INR":
             raise serializers.ValidationError("Only INR donations are supported right now.")
         return value.upper()
+
+    def validate(self, attrs):
+        pan_number = (attrs.get("pan_number") or "").upper().strip()
+        attrs["pan_number"] = pan_number
+        if attrs.get("atg_requested") and not pan_number:
+            raise serializers.ValidationError({"pan_number": "PAN card number is required for ATG donations."})
+        if pan_number and not re.fullmatch(r"[A-Z]{5}[0-9]{4}[A-Z]", pan_number):
+            raise serializers.ValidationError({"pan_number": "Enter a valid PAN card number."})
+        return attrs
 
 
 class DonationVerifySerializer(serializers.Serializer):
@@ -597,9 +699,17 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
             currency=data["currency"],
             donation_type=data["donation_type"],
             payment_mode_preference=data.get("payment_mode", ""),
+            donation_category=data.get("donation_category", ""),
+            atg_requested=data.get("atg_requested", False),
+            pan_number=data.get("pan_number", ""),
             message=data.get("message") or "",
             receipt=f"don_{uuid.uuid4().hex[:18]}",
-            notes={"source": "website", "payment_mode": data.get("payment_mode", "")},
+            notes={
+                "source": "website",
+                "payment_mode": data.get("payment_mode", ""),
+                "donation_category": data.get("donation_category", ""),
+                "atg_requested": data.get("atg_requested", False),
+            },
         )
         create_donation_log(
             donation,
@@ -610,7 +720,25 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "currency": donation.currency,
                 "donation_type": donation.donation_type,
                 "payment_mode_preference": donation.payment_mode_preference,
+                "donation_category": donation.donation_category,
+                "atg_requested": donation.atg_requested,
             },
+        )
+        notify_admin(
+            "New donation checkout started",
+            [
+                f"Name: {donation.donor_name}",
+                f"Email: {donation.donor_email}",
+                f"Phone: {donation.donor_phone}",
+                f"Amount: Rs {donation.amount}",
+                f"Donation Type: {donation.donation_type}",
+                f"Category: {donation.donation_category or 'General'}",
+                f"ATG Requested: {'Yes' if donation.atg_requested else 'No'}",
+                f"PAN: {donation.pan_number if donation.atg_requested else '-'}",
+                "",
+                donation.message,
+            ],
+            reply_to=donation.donor_email,
         )
 
         try:
@@ -621,6 +749,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "donor_name": donation.donor_name,
                 "donor_email": donation.donor_email,
                 "donation_type": donation.donation_type,
+                "donation_category": donation.donation_category,
+                "atg_requested": str(donation.atg_requested),
             }
             create_donation_log(
                 donation,

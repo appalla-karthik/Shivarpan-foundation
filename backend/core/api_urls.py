@@ -7,6 +7,7 @@ from foundation.api import StoryItemViewSet
 
 from foundation.api import (
     ArticleViewSet,
+    AwardNominationCreateAPIView,
     AwardViewSet,
     ContactSubmissionCreateAPIView,
     DonationCheckoutAPIView,
@@ -47,6 +48,7 @@ urlpatterns = [
     path("homepage/", HomepageAPIView.as_view(), name="homepage"),
     path("contact/", ContactSubmissionCreateAPIView.as_view(), name="contact-submit"),
     path("newsletter/subscribe/", SubscriberCreateAPIView.as_view(), name="newsletter-subscribe"),
+    path("award-nominations/", AwardNominationCreateAPIView.as_view(), name="award-nomination-submit"),
     path("donations/checkout/", DonationCheckoutAPIView.as_view(), name="donation-checkout"),
     path("donations/verify/", DonationVerifyAPIView.as_view(), name="donation-verify"),
 ]
