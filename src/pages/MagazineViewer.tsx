@@ -746,7 +746,7 @@ const MagazineViewer = () => {
                   {story.body ? (
                     <div dangerouslySetInnerHTML={{ __html: story.body }} />
                   ) : (
-                    <p>Content will appear here once the story body is added in the admin panel.</p>
+                    <p>This story is being prepared for reading.</p>
                   )}
                 </div>
               </div>

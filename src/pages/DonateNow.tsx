@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   findRecentProjectByIdentifier,
   mapRecentProjectsFromApi,
-  recentProjects,
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +16,7 @@ import { getJson, postJson, reportApiError } from "@/lib/api";
 
 const presetAmounts = [500, 1000, 2500, 5000];
 const donationModes = ["one_time", "monthly"] as const;
+const donationCategories = ["General Support", "Healthcare", "Education", "Food Support", "Environment", "Elderly Support", "Disability Assistance"] as const;
 
 type DonationMode = (typeof donationModes)[number];
 
@@ -72,9 +72,12 @@ const DonateNow = () => {
   const [donationMode, setDonationMode] = useState<DonationMode>("one_time");
   const [selectedAmount, setSelectedAmount] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState("");
+  const [donationCategory, setDonationCategory] = useState<string>("General Support");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [isAtgRequested, setIsAtgRequested] = useState(false);
+  const [panNumber, setPanNumber] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -87,12 +90,13 @@ const DonateNow = () => {
   }, [customAmount, selectedAmount]);
 
   useEffect(() => {
-    getJson<RecentProjectsApiItem[]>("projects/")
+    getJson<RecentProjectsApiItem[]>("projects/", { cache: false })
       .then((response) => {
         setApiProjects(response);
       })
       .catch((error) => {
         reportApiError("Unable to fetch donation projects", error);
+        setApiProjects([]);
       });
   }, []);
 
@@ -103,10 +107,7 @@ const DonateNow = () => {
 
   const selectedProject = useMemo(() => {
     const projectParam = new URLSearchParams(location.search).get("project")?.trim();
-    return (
-      findRecentProjectByIdentifier(availableProjects, projectParam) ??
-      findRecentProjectByIdentifier(recentProjects, projectParam)
-    );
+    return findRecentProjectByIdentifier(availableProjects, projectParam);
   }, [availableProjects, location.search]);
   const donationMessage = useMemo(() => {
     if (!selectedProject) {
@@ -117,13 +118,18 @@ const DonateNow = () => {
     return message.trim() ? `${projectNote}\n\n${message}` : projectNote;
   }, [message, selectedProject]);
   const isCustomAmountActive = customAmount.trim() !== "";
+  const normalizedPanPreview = panNumber.trim().toUpperCase();
+  const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(normalizedPanPreview);
 
   const resetForm = () => {
     setCustomAmount("");
     setSelectedAmount(1000);
+    setDonationCategory("General Support");
     setName("");
     setEmail("");
     setPhone("");
+    setIsAtgRequested(false);
+    setPanNumber("");
     setMessage("");
     setDonationMode("one_time");
   };
@@ -135,6 +141,16 @@ const DonateNow = () => {
       toast({
         title: "Invalid amount",
         description: "Minimum donation amount is Rs 100.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const normalizedPan = panNumber.trim().toUpperCase();
+    if (isAtgRequested && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(normalizedPan)) {
+      toast({
+        title: "PAN required",
+        description: "Enter a valid PAN card number to continue with ATG.",
         variant: "destructive",
       });
       return;
@@ -154,6 +170,9 @@ const DonateNow = () => {
         name,
         email,
         phone,
+        donation_category: donationCategory,
+        atg_requested: isAtgRequested,
+        pan_number: isAtgRequested ? normalizedPan : "",
         message: donationMessage,
       });
 
@@ -169,6 +188,8 @@ const DonateNow = () => {
         notes: {
           donation_id: checkout.donation_id,
           donation_mode: donationMode,
+          donation_category: donationCategory,
+          atg_requested: isAtgRequested ? "yes" : "no",
         },
         recurring: donationMode === "monthly" ? 1 : undefined,
         handler: async (response: RazorpaySuccessResponse) => {
@@ -193,7 +214,7 @@ const DonateNow = () => {
           } catch (verifyError) {
             toast({
               title: "Payment received but verification failed",
-              description: verifyError instanceof Error ? verifyError.message : "Please verify this payment from the admin panel.",
+              description: verifyError instanceof Error ? verifyError.message : "Please contact the support team to verify this payment.",
               variant: "destructive",
             });
           } finally {
@@ -344,7 +365,7 @@ const DonateNow = () => {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Choose Amount</p>
-                      <p className="mt-1 text-sm text-muted-foreground">Quick amount select karoge to custom field empty rahega. Custom amount likhoge to wahi final use hoga.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Select a quick amount or enter a custom amount. The custom amount will be used when filled.</p>
                     </div>
                     <span className="inline-flex rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
                       Active: {isCustomAmountActive ? "Custom amount" : `Quick Rs ${selectedAmount.toLocaleString("en-IN")}`}
@@ -408,6 +429,26 @@ const DonateNow = () => {
                 </div>
                 </div>
 
+                <div className="mt-4 rounded-[1.6rem] border border-border/80 bg-background/55 p-4">
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    Donation Category
+                    <select
+                      value={donationCategory}
+                      onChange={(event) => setDonationCategory(event.target.value)}
+                      className="h-11 rounded-md border border-input bg-background/70 px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                    >
+                      {donationCategories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Select the cause category you want to support.
+                  </p>
+                </div>
+
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <Input
                     required
@@ -436,6 +477,58 @@ const DonateNow = () => {
                   </div>
                 </div>
 
+                <div className="mt-4 rounded-[1.6rem] border border-border/80 bg-background/55 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsAtgRequested((current) => !current)}
+                    className={`flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition-all ${
+                      isAtgRequested
+                        ? "border-primary bg-primary/10 shadow-[0_14px_36px_-30px_hsl(var(--primary))]"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">ATG</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        A PAN card number is required for an ATG receipt/certificate.
+                      </p>
+                    </div>
+                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
+                      isAtgRequested ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
+                    }`}>
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                  </button>
+
+                  {isAtgRequested ? (
+                    <div className="mt-3">
+                      <Input
+                        required
+                        value={panNumber}
+                        onChange={(event) => setPanNumber(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10))}
+                        placeholder="PAN Card Number"
+                        maxLength={10}
+                        pattern="[A-Z]{5}[0-9]{4}[A-Z]"
+                        aria-invalid={!isPanValid}
+                        className={`h-11 bg-background/70 uppercase ${
+                          panNumber && isPanValid
+                            ? "border-emerald-500 focus-visible:ring-emerald-500"
+                            : panNumber
+                              ? "border-destructive focus-visible:ring-destructive"
+                              : ""
+                        }`}
+                      />
+                      <p className={`mt-2 text-xs font-medium ${isPanValid ? "text-emerald-600" : "text-destructive"}`}>
+                        {panNumber
+                          ? isPanValid
+                            ? "PAN verified."
+                            : "Invalid PAN format. Example: ABCDE1234F"
+                          : "PAN is required for ATG."}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+
                 <Textarea
                   rows={4}
                   value={message}
@@ -453,7 +546,7 @@ const DonateNow = () => {
                     {donationMode === "monthly" ? "Monthly donation" : "Total donation"}:{" "}
                     <span className="font-semibold text-foreground">Rs {finalAmount.toLocaleString("en-IN")}</span>
                   </p>
-                  <Button type="submit" disabled={isSubmitting} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button type="submit" disabled={isSubmitting || (isAtgRequested && !isPanValid)} className="bg-accent text-accent-foreground hover:bg-accent/90">
                     {isSubmitting ? (
                       <>
                         <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

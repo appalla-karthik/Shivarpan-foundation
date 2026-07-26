@@ -229,9 +229,41 @@ const EMagazineArticles = () => {
             </div>
           ) : null}
           {!isLoading && !error && formattedStories.length === 0 ? (
-            <div className="col-span-full rounded-2xl border border-slate-200/80 bg-white p-6 text-center text-sm text-slate-600 shadow-sm">
-              No magazine stories published yet.
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.45 }}
+              className="col-span-full overflow-hidden rounded-[2rem] border border-[#14532d]/15 bg-[radial-gradient(circle_at_16%_20%,rgba(245,158,11,0.22),transparent_34%),radial-gradient(circle_at_86%_22%,rgba(20,83,45,0.16),transparent_30%),linear-gradient(135deg,#ffffff_0%,#fff8e7_52%,#eef8f0_100%)] p-6 text-center shadow-[0_24px_70px_rgba(20,83,45,0.12)] sm:p-10"
+            >
+              <div className="mx-auto flex max-w-3xl flex-col items-center">
+                <div className="relative mb-5 flex h-24 w-24 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full border border-[#f59e0b]/30" />
+                  <span className="absolute inset-3 rounded-full border border-[#14532d]/20" />
+                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#14532d] text-white shadow-[0_18px_34px_rgba(20,83,45,0.24)]">
+                    <BookOpen className="h-8 w-8" />
+                  </span>
+                </div>
+                <p className="rounded-full border border-[#f59e0b]/35 bg-[#f59e0b]/12 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[#14532d]">
+                  Magazine Launching Soon
+                </p>
+                <h2
+                  className="mt-4 text-3xl font-semibold leading-tight text-[#14532d] sm:text-4xl"
+                  style={{ fontFamily: "Poppins, sans-serif" }}
+                >
+                  Reports & stories are getting ready
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                  Fresh reports, field notes, and digital flipbooks are being prepared for readers.
+                </p>
+                <div className="mt-6 grid w-full max-w-xl gap-3 sm:grid-cols-3">
+                  {["Cover", "Stories", "Flipbook"].map((label) => (
+                    <div key={label} className="rounded-2xl border border-[#14532d]/10 bg-white/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#14532d] shadow-sm">
+                      {label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           ) : null}
           {formattedStories.map((magazine, index) => (
             <div

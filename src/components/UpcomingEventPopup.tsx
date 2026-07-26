@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { getJson } from "@/lib/api";
 
-const EVENT_POSTER_URL = "/upcoming-event-poster.webp";
-
 type UpcomingEventPopupProps = {
   enabled?: boolean;
 };
@@ -28,45 +26,29 @@ type UpcomingEventPayload = {
   cta_url: string;
 };
 
-const fallbackEvent: UpcomingEventPayload = {
-  id: 0,
-  title: "Community Action Week 2026",
-  subtitle: "",
-  description:
-    "Join our upcoming drives across education support, health camps, and food relief. Volunteer slots, CSR participation, and donor collaborations are now open.",
-  date_label: "April 2026",
-  location_label: "Mumbai + Nearby Districts",
-  poster_image: null,
-  cta_text: "View Upcoming Events",
-  cta_url: "/upcoming-events",
-};
-
 const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [event, setEvent] = useState<UpcomingEventPayload>(fallbackEvent);
-
-  useEffect(() => {
-    setIsOpen(enabled);
-  }, [enabled]);
+  const [event, setEvent] = useState<UpcomingEventPayload | null>(null);
 
   useEffect(() => {
     if (!enabled) {
+      setIsOpen(false);
       return;
     }
 
     const loadEvent = async () => {
       try {
         const data = await getJson<Partial<UpcomingEventPayload>>("upcoming-events/active");
-        if (data && data.title) {
-          setEvent({
-            ...fallbackEvent,
-            ...data,
-          } as UpcomingEventPayload);
+        if (data && data.title && data.poster_image?.url) {
+          setEvent(data as UpcomingEventPayload);
+          setIsOpen(true);
         } else {
-          setEvent(fallbackEvent);
+          setEvent(null);
+          setIsOpen(false);
         }
       } catch {
-        setEvent(fallbackEvent);
+        setEvent(null);
+        setIsOpen(false);
       }
     };
 
@@ -79,7 +61,7 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
 
   return (
     <AnimatePresence>
-      {isOpen ? (
+      {isOpen && event ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -103,7 +85,7 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
                 <X className="h-4 w-4" />
               </button>
               <img
-                src={event.poster_image?.url || EVENT_POSTER_URL}
+                src={event.poster_image?.url}
                 alt="Upcoming event poster"
                 width={600}
                 height={600}

@@ -9,7 +9,6 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
-    <link rel="preload" as="image" href="/hero-lcp.jpg" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -32,12 +31,11 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
       img-src 'self' data: https: http:;
-      connect-src 'self' https://api.github.com https://shivarpan-foundation-backend.onrender.com http://127.0.0.1:8000 ws://127.0.0.1:8000;
-      media-src 'self' https:;
+      connect-src 'self' https://api.github.com https://shivarpan-foundation-backend.onrender.com http://127.0.0.1:8000 http://localhost:8000 ws://127.0.0.1:8000 ws://localhost:8000;
+      media-src 'self' https: http://127.0.0.1:8000 http://localhost:8000;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
-      upgrade-insecure-requests;
     ">
     
     <title>Shivarpan Charitable Foundation</title>

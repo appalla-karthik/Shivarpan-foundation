@@ -154,7 +154,7 @@ const TeamMembers = () => {
               Our Team Across States
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Admin-added members are organized by state, so every regional team can be managed from one place.
+              Regional teams are organized by state so visitors can explore local leadership clearly.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               {stateTeams.map((team) => (
@@ -266,7 +266,7 @@ const TeamMembers = () => {
                       {isLoading ? "Loading team members..." : "No team members added for this state yet."}
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Add a member from the admin panel and it will appear here automatically.
+                      Team details are coming soon for this region.
                     </p>
                   </div>
                 )}

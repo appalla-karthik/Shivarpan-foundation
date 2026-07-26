@@ -1,8 +1,6 @@
 type JsonRecord = Record<string, unknown>;
-const API_UNAVAILABLE_COOLDOWN_MS = 30000;
-const LOCAL_API_TIMEOUT_MS = 250;
+const LOCAL_API_TIMEOUT_MS = 4500;
 const REMOTE_API_TIMEOUT_MS = 4500;
-let apiUnavailableUntil = 0;
 
 // Cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -163,23 +161,6 @@ export const assetUrl = (path?: string | null) => {
   return `${origin}/${sanitizedPath.replace(/^\/+/, "")}`;
 };
 
-const createApiUnavailableError = () => {
-  const error = new Error("API temporarily unavailable");
-  error.name = "ApiUnavailableError";
-  return error;
-};
-
-const shouldSkipRequest = () =>
-  typeof window !== "undefined" && Date.now() < apiUnavailableUntil;
-
-const markApiUnavailable = () => {
-  apiUnavailableUntil = Date.now() + API_UNAVAILABLE_COOLDOWN_MS;
-};
-
-const clearApiUnavailable = () => {
-  apiUnavailableUntil = 0;
-};
-
 export const isApiUnavailableError = (error: unknown) =>
   error instanceof Error && error.name === "ApiUnavailableError";
 
@@ -231,10 +212,6 @@ export async function postJson<TResponse = JsonRecord>(
   path: string,
   payload: JsonRecord
 ): Promise<TResponse> {
-  if (shouldSkipRequest()) {
-    throw createApiUnavailableError();
-  }
-
   // Validate inputs
   if (!validatePath(path)) {
     throw new Error('Invalid API path');
@@ -268,12 +245,7 @@ export async function postJson<TResponse = JsonRecord>(
       cache: 'no-cache',
       signal: controller.signal,
     });
-    clearApiUnavailable();
   } catch (error) {
-    if (isNetworkError(error)) {
-      markApiUnavailable();
-      throw createApiUnavailableError();
-    }
     throw error;
   } finally {
     window.clearTimeout(timeoutId);
@@ -294,10 +266,6 @@ export async function postJson<TResponse = JsonRecord>(
 }
 
 export async function getJson<TResponse = JsonRecord>(path: string, options?: { cache?: boolean; cacheTTL?: number }): Promise<TResponse> {
-  if (shouldSkipRequest()) {
-    throw createApiUnavailableError();
-  }
-
   // Validate input
   if (!validatePath(path)) {
     throw new Error('Invalid API path');
@@ -320,19 +288,13 @@ export async function getJson<TResponse = JsonRecord>(path: string, options?: { 
       headers: { 
         "Accept": "application/json",
         "X-Requested-With": "XMLHttpRequest", // CSRF protection
-        "Cache-Control": options?.cache === false ? "no-cache" : "default",
       },
       credentials: 'same-origin',
       mode: 'cors',
       cache: options?.cache === false ? 'no-store' : 'default',
       signal: controller.signal,
     });
-    clearApiUnavailable();
   } catch (error) {
-    if (isNetworkError(error)) {
-      markApiUnavailable();
-      throw createApiUnavailableError();
-    }
     throw error;
   } finally {
     window.clearTimeout(timeoutId);

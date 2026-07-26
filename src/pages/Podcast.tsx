@@ -10,11 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useNavigate } from "react-router-dom";
-import { podcastEpisodes } from "@/data/podcastEpisodes";
+import type { PodcastEpisodeItem } from "@/data/podcastEpisodes";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assetUrl, getJson } from "@/lib/api";
 
-type EpisodeWithMeta = (typeof podcastEpisodes)[number] & {
+type EpisodeWithMeta = PodcastEpisodeItem & {
   category: string;
   publishedOn: string;
   listensK: number;
@@ -29,7 +29,8 @@ const getDurationInMinutes = (duration: string) => {
 const Podcast = () => {
   const navigate = useNavigate();
   const episodesSectionRef = useRef<HTMLDivElement | null>(null);
-  const [episodes, setEpisodes] = useState(podcastEpisodes);
+  const [episodes, setEpisodes] = useState<PodcastEpisodeItem[]>([]);
+  const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
 
   useEffect(() => {
     getJson<any[]>("podcast/episodes/")
@@ -53,11 +54,14 @@ const Podcast = () => {
           })
           .filter(Boolean);
 
-        if (formatted.length) {
-          setEpisodes(formatted as typeof podcastEpisodes);
-        }
+        setEpisodes(formatted as PodcastEpisodeItem[]);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setEpisodes([]);
+      })
+      .finally(() => {
+        setIsLoadingEpisodes(false);
+      });
   }, []);
 
   const episodeCatalog = useMemo<EpisodeWithMeta[]>(
@@ -242,6 +246,55 @@ const Podcast = () => {
             ref={episodesSectionRef}
             className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3"
           >
+            {isLoadingEpisodes ? (
+              <div className="rounded-2xl border border-border bg-card p-6 text-sm font-medium text-muted-foreground md:col-span-2 xl:col-span-3">
+                Loading podcast episodes...
+              </div>
+            ) : null}
+            {!isLoadingEpisodes && episodeCatalog.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.45 }}
+                className="relative overflow-hidden rounded-[2rem] border border-primary/15 bg-[radial-gradient(circle_at_18%_18%,hsl(var(--accent)/0.2),transparent_34%),radial-gradient(circle_at_84%_22%,hsl(var(--primary)/0.18),transparent_32%),linear-gradient(135deg,hsl(var(--card))_0%,hsl(var(--background))_55%,hsl(var(--primary)/0.08)_100%)] p-6 text-center shadow-[0_24px_70px_rgba(15,23,42,0.1)] md:col-span-2 md:p-10 xl:col-span-3"
+              >
+                <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-20 right-10 h-44 w-44 rounded-full bg-primary/18 blur-3xl" />
+                <div className="relative mx-auto flex max-w-3xl flex-col items-center">
+                  <div className="relative mb-5 flex h-24 w-24 items-center justify-center">
+                    <span className="absolute inset-0 rounded-full border border-primary/20" />
+                    <span className="absolute inset-3 rounded-full border border-accent/30" />
+                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_18px_34px_hsl(var(--primary)/0.22)]">
+                      <Headphones className="h-8 w-8" />
+                    </span>
+                  </div>
+                  <p className="rounded-full border border-accent/35 bg-accent/12 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+                    Podcast Coming Soon
+                  </p>
+                  <h2 className="mt-4 font-display text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
+                    New conversations are warming up
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    Field voices, community conversations, and inspiring episodes are coming soon.
+                  </p>
+                  <div className="mt-6 grid w-full max-w-xl gap-3 sm:grid-cols-3">
+                    {[
+                      { label: "Episodes", icon: <PlayCircle className="h-4 w-4" /> },
+                      { label: "Hosts", icon: <Headphones className="h-4 w-4" /> },
+                      { label: "Runtime", icon: <Clock3 className="h-4 w-4" /> },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border/80 bg-background/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-primary shadow-sm"
+                      >
+                        {item.icon}
+                        {item.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ) : null}
             {episodeCatalog.map((episode, index) => (
               <motion.article
                 key={episode.slug}

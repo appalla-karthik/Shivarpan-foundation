@@ -3,8 +3,6 @@
   import { useEffect, useState } from "react";
   import {
     motion,
-    MotionValue,
-    useMotionValue,
     useReducedMotion,
     useScroll,
     useSpring,
@@ -14,13 +12,7 @@
   import { ScrollTrigger } from "gsap/ScrollTrigger";
   import { ArrowUpRight, Calendar, Clock3, MapPin, Sparkles } from "lucide-react";
   import { Badge } from "@/components/ui/badge";
-  import { useIsMobile } from "@/hooks/use-mobile";
   import { assetUrl, getJson } from "@/lib/api";
-  import aboutHero from "@/assets/about-hero-optimized.jpg";
-  import campaignFood from "@/assets/campaign-food.jpg";
-  import campaignEducation from "@/assets/campaign-education.jpg";
-  import campaignHealth from "@/assets/campaign-health.jpg";
-  import campaignEnvironment from "@/assets/campaign-environment.jpg";
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -32,17 +24,6 @@
     readTime: string;
     category: string;
     excerpt: string;
-  }
-
-  interface FlipShowcaseCard {
-    id: string;
-    title: string;
-    category: string;
-    image: string;
-    alt: string;
-    metric: string;
-    summary: string;
-    cta: string;
   }
 
   interface HeroGridItem {
@@ -73,17 +54,6 @@
     },
   ];
 
-  const fallbackHeroImages = [
-    aboutHero,
-    campaignFood,
-    campaignEducation,
-    campaignHealth,
-    campaignEnvironment,
-  ];
-
-
-
-
   const heroGridItems: HeroGridItem[] = [
     { row: 1, col: 2, imageIndex: 6 },
     { row: 1, col: 5, imageIndex: 20 },
@@ -107,157 +77,23 @@
     { row: 11, col: 7, imageIndex: 18 },
     { row: 12, col: 5, imageIndex: 19 },
   ];
-
-
-
-
-
-  const flipSpreadPositionsDesktop = [14, 38, 62, 86];
-  const flipSpreadPositionsMobile = [22, 40, 60, 78];
-  const flipSpreadRotationsDesktop = [-15, -7.5, 7.5, 15];
-  const flipSpreadRotationsMobile = [-12, -5.5, 5.5, 12];
-  const flipFloatingDelays = [0, 0.2, 0.4, 0.6];
   const heroMaxRow = Math.max(...heroGridItems.map((item) => item.row));
-
-  interface FlipStoryCardProps {
-    card: FlipShowcaseCard;
-    index: number;
-    progress: MotionValue<number>;
-    targetLeft: number;
-    targetRotation: number;
-    reduceMotion: boolean;
-  }
-
-  const FlipStoryCard = ({
-    card,
-    index,
-    progress,
-    targetLeft,
-    targetRotation,
-    reduceMotion,
-  }: FlipStoryCardProps) => {
-    const spreadEnd = 0.22;
-    const staggerOffset = index * 0.04;
-    const flipStart = Math.min(0.24 + staggerOffset, 0.9);
-    const flipEnd = Math.min(0.56 + staggerOffset, 0.98);
-
-    const leftValue = useTransform(progress, [0, spreadEnd, 1], [50, targetLeft, targetLeft]);
-    const left = useTransform(leftValue, (value) => `${value}%`);
-    const cardRotation = useTransform(
-      progress,
-      [0, spreadEnd, flipStart, flipEnd, 1],
-      [0, targetRotation, targetRotation, 0, 0],
-    );
-    const frontRotation = useTransform(progress, [0, flipStart, flipEnd, 1], [0, 0, -180, -180]);
-    const backRotation = useTransform(progress, [0, flipStart, flipEnd, 1], [180, 180, 0, 0]);
-    const ambientLift = useTransform(progress, [0, 0.5, 1], [0, -4, 0]);
-
-    return (
-      <motion.article
-        style={{
-          top: "48%",
-          left,
-          x: "-50%",
-          y: "-50%",
-          rotate: cardRotation,
-        }}
-        className="absolute h-[clamp(13.5rem,52vw,18rem)] w-[clamp(9.5rem,36vw,13rem)] [perspective:1200px] sm:h-[clamp(15rem,42vw,22rem)] sm:w-[clamp(10.5rem,30vw,16rem)] lg:h-[clamp(16.5rem,38vw,26rem)] lg:w-[clamp(11.5rem,24vw,18.75rem)]"
-      >
-        <motion.div
-          style={{ y: ambientLift }}
-          animate={reduceMotion ? undefined : { y: [0, -28, 0] }}
-          transition={
-            reduceMotion
-              ? undefined
-              : {
-                  duration: 3,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                  delay: flipFloatingDelays[index % flipFloatingDelays.length],
-                }
-          }
-          className="relative h-full w-full"
-        >
-          <div className="relative h-full w-full [transform-style:preserve-3d]">
-            <motion.div
-              style={{ rotateY: frontRotation, backfaceVisibility: "hidden" }}
-              className="absolute inset-0 overflow-hidden rounded-xl border border-primary-foreground/20 bg-card shadow-[0_24px_45px_hsl(var(--foreground)/0.35)]"
-            >
-              <img
-                src={card.image}
-                alt={card.alt}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/35 to-primary/15" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-primary-foreground">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/80">
-                  {card.category}
-                </p>
-                <h3 className="mt-1 line-clamp-2 text-lg font-display font-bold leading-tight">
-                  {card.title}
-                </h3>
-              </div>
-            </motion.div>
-
-            <motion.div
-              style={{ rotateY: backRotation, backfaceVisibility: "hidden" }}
-              className="absolute inset-0 flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 text-foreground shadow-[0_24px_45px_hsl(var(--foreground)/0.2)]"
-            >
-              <Badge className="w-fit bg-primary/12 text-primary">{card.category}</Badge>
-
-              <div className="space-y-2">
-                <p className="font-display text-2xl font-bold leading-tight text-foreground">
-                  {card.metric}
-                </p>
-                <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                  {card.summary}
-                </p>
-              </div>
-
-              <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                {card.cta}
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
-      </motion.article>
-    );
-  };
   const NewsStories = () => {
 
-    const [flipCards, setFlipCards] = useState<FlipShowcaseCard[]>([]);
     const [heroImages, setHeroImages] = useState<any[]>([]);
     const [storiesData, setStoriesData] = useState<Story[]>([]);
+    const [isLoadingStories, setIsLoadingStories] = useState(true);
 
     const getHeroMedia = (imageIndex: number) => {
-    if (!heroImages || heroImages.length === 0) {
-    return {
-      image: fallbackHeroImages[(imageIndex - 1) % fallbackHeroImages.length],
-      alt: "fallback"
-    };
-  }
+      if (!heroImages || heroImages.length === 0) {
+        return null;
+      }
       return heroImages[(imageIndex - 1) % heroImages.length];
     };
   useEffect(() => {
     getJson<any[]>("story-items/")
       .then((items) => {
         const storyItems = Array.isArray(items) ? items : [];
-
-        setFlipCards(
-          storyItems.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            category: item.category || "Story",
-            image: assetUrl(item.image),
-            alt: item.title,
-            metric: "Impact",
-            summary: item.description || "Story summary",
-            cta: "Read More",
-          })),
-        );
 
         setHeroImages(
           storyItems.map((item: any) => ({
@@ -278,50 +114,34 @@
           })),
         );
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setHeroImages([]);
+        setStoriesData([]);
+      })
+      .finally(() => {
+        setIsLoadingStories(false);
+      });
   }, []);
 
     const reduceMotion = useReducedMotion();
-    const isMobile = useIsMobile();
     const introSectionRef = useRef<HTMLElement | null>(null);
     const heroScrollRef = useRef<HTMLDivElement | null>(null);
     const heroGridRef = useRef<HTMLDivElement | null>(null);
     const impactSectionRef = useRef<HTMLElement | null>(null);
-    const flipSectionRef = useRef<HTMLElement | null>(null);
-    const reducedProgress = useMotionValue(1);
-    const flipScrollProgress = useMotionValue(0);
     const { scrollYProgress: impactProgress } = useScroll({
       target: impactSectionRef,
       offset: ["start 85%", "end 25%"],
     });
-    const flipProgressSource = reduceMotion ? reducedProgress : flipScrollProgress;
     const smoothImpactProgress = useSpring(impactProgress, {
       stiffness: 110,
       damping: 28,
       mass: 0.35,
-    });
-    const smoothFlipProgress = useSpring(flipProgressSource, {
-      stiffness: 220,
-      damping: 34,
-      mass: 0.2,
     });
 
     const titleY = useTransform(smoothImpactProgress, [0, 1], [28, -6]);
     const titleOpacity = useTransform(smoothImpactProgress, [0, 0.2, 1], [0.55, 1, 1]);
     const statsY = useTransform(smoothImpactProgress, [0, 1], [16, 0]);
     const statsOpacity = useTransform(smoothImpactProgress, [0, 0.25, 1], [0.6, 1, 1]);
-    const flipHeaderY = useTransform(smoothFlipProgress, [0, 1], [-8, -34]);
-    const flipHeaderOpacity = useTransform(smoothFlipProgress, [0, 1], [1, 1]);
-    const flipTitleScale = useTransform(smoothFlipProgress, [0, 0.18, 1], [1.18, 1.08, 0.94]);
-    const flipCardsY = useTransform(
-      smoothFlipProgress,
-      [0, 1],
-      [isMobile ? 12 : 14, isMobile ? 28 : 42],
-    );
-    const flipBackdropScale = useTransform(smoothFlipProgress, [0, 1], [1.08, 1]);
-    const flipHintOpacity = useTransform(smoothFlipProgress, [0, 0.15, 0.95, 1], [0, 0.8, 0.8, 0.24]);
-    const spreadPositions = isMobile ? flipSpreadPositionsMobile : flipSpreadPositionsDesktop;
-    const spreadRotations = isMobile ? flipSpreadRotationsMobile : flipSpreadRotationsDesktop;
 
 
     useLayoutEffect(() => {
@@ -437,38 +257,6 @@
       };
     }, [reduceMotion]);
 
-    useLayoutEffect(() => {
-      const flipElement = flipSectionRef.current;
-      if (!flipElement || reduceMotion) {
-        return;
-      }
-
-      const ctx = gsap.context(() => {
-        const trigger = ScrollTrigger.create({
-          trigger: flipElement,
-          start: "center center",
-          end: "+=140%",
-          scrub: true,
-          pin: true,
-          pinSpacing: true,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            flipScrollProgress.set(self.progress);
-          },
-        });
-
-        return () => {
-          trigger.kill();
-        };
-      }, flipElement);
-
-      ScrollTrigger.refresh();
-
-      return () => {
-        ctx.revert();
-      };
-    }, [flipScrollProgress, reduceMotion]);
-
   const leadStory = storiesData?.[0];
   const supportStories = storiesData?.slice(1, 3) || [];
   const dispatchStories = storiesData.slice(3);
@@ -524,7 +312,30 @@
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-b from-transparent via-background/70 to-background" />
         </section>
 
-        <section ref={impactSectionRef} className="relative pt-14 pb-20 md:pt-20 md:pb-28">
+        {isLoadingStories ? (
+          <section className="px-4 py-16">
+            <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-border bg-card p-6 text-center text-sm font-medium text-muted-foreground">
+              Loading stories...
+            </div>
+          </section>
+        ) : null}
+
+        {!isLoadingStories && storiesData.length === 0 ? (
+          <section className="px-4 py-16">
+            <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-border bg-card p-6 text-center">
+              <h2 className="font-display text-2xl font-semibold text-foreground">
+                No stories are published yet.
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                New stories are coming soon.
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        {storiesData.length > 0 ? (
+          <>
+        <section ref={impactSectionRef} className="relative pt-12 pb-14 md:pt-16 md:pb-20">
           <div className="container relative mx-auto px-4">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
               <motion.div
@@ -602,13 +413,13 @@
               </motion.div>
             </div>
 
-            <div className="mt-14 grid gap-6 lg:grid-cols-12">
+            <div className="mt-10 grid items-start gap-6 lg:grid-cols-12">
               <motion.article
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-10%" }}
                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className="lg:col-span-7 overflow-hidden rounded-[2.2rem] border border-border/80 bg-card p-4 shadow-[0_30px_85px_-58px_hsl(var(--foreground))] md:p-5"
+                className="self-start lg:col-span-7 overflow-hidden rounded-[2.2rem] border border-border/80 bg-card p-4 shadow-[0_30px_85px_-58px_hsl(var(--foreground))] md:p-5"
               >
                 <div className="grid gap-5 md:grid-cols-12">
                   <div className="relative min-h-[380px] overflow-hidden rounded-[1.8rem] md:col-span-7">
@@ -830,67 +641,8 @@
             </div>
           </div>
         </section>
-
-        <section ref={flipSectionRef} className="relative h-screen overflow-hidden isolate">
-          <div className="h-full overflow-hidden bg-background">
-            <motion.div
-              aria-hidden
-              style={{ scale: flipBackdropScale }}
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,hsl(var(--primary)/0.18),transparent_50%),radial-gradient(circle_at_85%_20%,hsl(var(--accent)/0.2),transparent_46%),radial-gradient(circle_at_50%_85%,hsl(var(--primary)/0.14),transparent_48%)]"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background" />
-            <div className="pointer-events-none absolute -top-24 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-            <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
-
-            <div className="relative z-10 container mx-auto flex h-full flex-col px-4 pb-20 pt-6 md:pb-24 md:pt-8">
-              <motion.div
-                style={{ y: flipHeaderY, opacity: flipHeaderOpacity }}
-                className="relative z-30 mx-auto max-w-4xl text-center text-foreground"
-              >
-                <span className="inline-flex items-center mt-3 gap-2 rounded-full border border-primary/20 bg-card/80 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary sm:text-xs">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Compassion Stories
-                </span>
-
-                <motion.h2
-                  style={{ scale: flipTitleScale }}
-                  className="mt-4 origin-top font-display text-3xl font-bold leading-tight sm:text-5xl lg:text-6xl"
-                >
-                  Every Card Holds a Story of Care and Hope
-                </motion.h2>
-
-                <p className="mx-auto mt-7 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  From food support to health outreach, each card reflects real people,
-                  volunteer effort, and the dignity-first work our NGO continues on the ground.
-                </p>
-              </motion.div>
-
-              <motion.div
-                style={{ y: flipCardsY }}
-                className="relative z-10 mx-auto mb-8 mt-8 flex-1 w-full max-w-6xl sm:mt-14 sm:mb-10 md:mb-16 md:mt-[150px]"
-              >
-                {flipCards.slice(0, 4).map((card, index) => (
-                  <FlipStoryCard
-                    key={card.id}
-                    card={card}
-                    index={index}
-                    progress={smoothFlipProgress}
-                    targetLeft={spreadPositions[index]}
-                    targetRotation={spreadRotations[index]}
-                    reduceMotion={Boolean(reduceMotion)}
-                  />
-                ))}
-              </motion.div>
-
-              <motion.p
-                style={{ opacity: flipHintOpacity }}
-                className="pointer-events-none mx-auto mt-auto rounded-full border border-border bg-card/85 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground"
-              >
-                Scroll to witness stories of care, courage, and community support
-              </motion.p>
-            </div>
-          </div>
-        </section>
+          </>
+        ) : null}
       </div>
     );
   };

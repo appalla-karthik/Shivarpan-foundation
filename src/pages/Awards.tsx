@@ -11,11 +11,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedSection from "@/components/AnimatedSection";
-import campaignFood from "@/assets/campaign-food.jpg";
-import aboutHero from "@/assets/about-hero-optimized.jpg";
-import campaignEducation from "@/assets/campaign-education.jpg";
-import campaignHealth from "@/assets/campaign-health.jpg";
-import campaignEnvironment from "@/assets/campaign-environment.jpg";
 import { assetUrl, getJson } from "@/lib/api";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -23,11 +18,13 @@ gsap.registerPlugin(ScrollTrigger);
 interface AwardRecognition {
   id: number;
   title: string;
+  category: string;
   presenter: string;
   year: string;
   summary: string;
   image: string;
   detailImages: string[];
+  isUpcoming: boolean;
 }
 
 interface PreviewController {
@@ -37,14 +34,14 @@ interface PreviewController {
 }
 
 interface UpcomingAward {
-  id: string;
+  id: number;
   title: string;
+  category: string;
   presenter: string;
   date: string;
   location: string;
   summary: string;
   image: string;
-  cta: string;
   shellClass: string;
 }
 
@@ -59,125 +56,9 @@ const heroKineticLines = [
   "milestones milestones milestones",
 ];
 
-const fallbackAwards: AwardRecognition[] = [
-  {
-    id: 0,
-    title: "Excellence in Community Development",
-    presenter: "Maharashtra Social Impact Council",
-    year: "2025",
-    summary: "Honored for cross-sector delivery across education, health, and livelihoods.",
-    image: aboutHero,
-    detailImages: [aboutHero, campaignFood, campaignEducation],
-  },
-  {
-    id: 1,
-    title: "Grassroots Education Leadership",
-    presenter: "India Volunteer Network",
-    year: "2024",
-    summary: "Recognized for scholarship continuity and student retention outcomes.",
-    image: campaignEducation,
-    detailImages: [campaignEducation, aboutHero, campaignHealth],
-  },
-  {
-    id: 2,
-    title: "Rural Health Outreach Award",
-    presenter: "Public Health Alliance",
-    year: "2024",
-    summary: "Awarded for preventive camp delivery and structured follow-up care.",
-    image: campaignHealth,
-    detailImages: [campaignHealth, campaignEducation, campaignEnvironment],
-  },
-  {
-    id: 3,
-    title: "Sustainable Communities Citation",
-    presenter: "Green India Collective",
-    year: "2023",
-    summary: "Recognized for volunteer-led plantation drives and ecological stewardship.",
-    image: campaignEnvironment,
-    detailImages: [campaignEnvironment, campaignHealth, campaignFood],
-  },
-  {
-    id: 4,
-    title: "Emergency Nutrition Impact Honor",
-    presenter: "National Relief Forum",
-    year: "2023",
-    summary: "Acknowledged for rapid food support in high-risk urban clusters.",
-    image: campaignFood,
-    detailImages: [campaignFood, aboutHero, campaignEnvironment],
-  },
-  {
-    id: 5,
-    title: "Women & Child Welfare Recognition",
-    presenter: "Community Rights Foundation",
-    year: "2022",
-    summary: "Awarded for maternal support, child nutrition, and local trust-building.",
-    image: aboutHero,
-    detailImages: [aboutHero, campaignHealth, campaignEducation],
-  },
-  {
-    id: 6,
-    title: "Volunteer Excellence Distinction",
-    presenter: "Civic Action Guild",
-    year: "2022",
-    summary: "Recognized for consistent volunteer mobilization and execution quality.",
-    image: campaignEducation,
-    detailImages: [campaignEducation, campaignFood, aboutHero],
-  },
-  {
-    id: 7,
-    title: "Health & Hope Service Medal",
-    presenter: "Care Access Mission",
-    year: "2021",
-    summary: "Honored for compassionate healthcare outreach in underserved regions.",
-    image: campaignHealth,
-    detailImages: [campaignHealth, campaignEnvironment, campaignFood],
-  },
-];
-
-const upcomingAwards: UpcomingAward[] = [
-  {
-    id: "ua-01",
-    title: "Made In India Excellence Awards 2026",
-    presenter: "Presented by Shivarpan Foundation",
-    date: "Tuesday, 7 Dec 2026",
-    location: "Pune, MH, India",
-    summary:
-      "A high-energy honors showcase built to spark anticipation, spotlight bold achievements, and make the audience feel something major is on the way.",
-    image: campaignFood,
-    cta: "Nominate Now",
-    shellClass:
-      "from-black via-[#17120a] to-[#7a4b00]",
-  },
-  {
-    id: "ua-02",
-    title: "Gujarat Udyogak Gaurav Puraskar 2026",
-    presenter: "Presented by Shivarpan Foundation",
-    date: "13/12/2026",
-    location: "Ahmedabad, GJ, India",
-    summary:
-      "A rich showcase for standout leadership, bold ambition, and the kind of stage presence that feels worthy of a major public reveal.",
-    image: campaignEnvironment,
-    cta: "Apply Now",
-    shellClass:
-      "from-[#1b1200] via-[#7b5a12] to-[#f2a532]",
-  },
-  {
-    id: "ua-03",
-    title: "National Teachers Awards 2026",
-    presenter: "Presented by Shivarpan Foundation",
-    date: "Saturday, 13 Dec 2026",
-    location: "Ahmedabad, GJ, India",
-    summary:
-      "An audience-facing honors format designed to celebrate excellence with theatrical visuals, prestige cues, and a strong nomination call-to-action.",
-    image: campaignEducation,
-    cta: "Nominate Now",
-    shellClass:
-      "from-[#12051d] via-[#3b1463] to-[#d3a200]",
-  },
-];
-
 const Awards = () => {
-  const [awardRecognitions, setAwardRecognitions] = useState<AwardRecognition[]>(fallbackAwards);
+  const [awardRecognitions, setAwardRecognitions] = useState<AwardRecognition[]>([]);
+  const [isLoadingAwards, setIsLoadingAwards] = useState(true);
   const [experienceStarted, setExperienceStarted] = useState(false);
   const [isHeroAnimating, setIsHeroAnimating] = useState(false);
   const experienceSectionRef = useRef<HTMLElement | null>(null);
@@ -212,24 +93,34 @@ const Awards = () => {
             return {
               id: item?.id ?? index,
               title: item?.title ?? "Recognition",
+              category: item?.category ?? "",
               presenter: item?.presenter ?? "",
               year: item?.year ?? "",
               summary: item?.summary ?? "",
               image: imageUrl,
               detailImages: detailImages.length ? detailImages : [imageUrl],
+              isUpcoming: Boolean(item?.is_upcoming),
             } as AwardRecognition;
           })
           .filter(Boolean) as AwardRecognition[];
 
-        if (formatted.length) {
-          setAwardRecognitions(formatted);
-        }
+        setAwardRecognitions(formatted);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setAwardRecognitions([]);
+      })
+      .finally(() => {
+        setIsLoadingAwards(false);
+      });
   }, []);
 
   const parallaxSlides = useMemo(
-    () =>
+    () => {
+      if (awardRecognitions.length === 0) {
+        return [];
+      }
+
+      return (
       Array.from({ length: 14 }, (_, index) => {
         const award = awardRecognitions[index % awardRecognitions.length];
         return {
@@ -238,16 +129,41 @@ const Awards = () => {
           title: award.title,
           year: award.year,
         };
-      }),
+      })
+      );
+    },
     [awardRecognitions],
   );
 
   const previewLeftCards = useMemo(
-    () => awardRecognitions.filter((_, index) => index % 4 === 2 || index % 4 === 3),
+    () => awardRecognitions,
     [awardRecognitions],
   );
   const previewRightCards = useMemo(
-    () => awardRecognitions.filter((_, index) => index % 4 === 0 || index % 4 === 1),
+    () => awardRecognitions,
+    [awardRecognitions],
+  );
+
+  const upcomingAwardCards = useMemo<UpcomingAward[]>(
+    () => {
+      const shellClasses = [
+        "from-black via-[#17120a] to-[#7a4b00]",
+        "from-[#1b1200] via-[#7b5a12] to-[#f2a532]",
+        "from-[#12051d] via-[#3b1463] to-[#d3a200]",
+      ];
+
+      return awardRecognitions.filter((award) => award.isUpcoming).slice(0, 3).map((award, index) => ({
+        id: award.id,
+        title: award.title,
+        category: award.category || "Upcoming Award",
+        presenter: award.presenter || "Presented by Shivarpan Foundation",
+        date: award.year || "Date to be announced",
+        location: "Venue to be announced",
+        summary: award.summary || "A new recognition showcase is being prepared for outstanding nominees.",
+        image: award.image,
+        shellClass: shellClasses[index % shellClasses.length],
+      }));
+    },
     [awardRecognitions],
   );
 
@@ -627,7 +543,7 @@ const Awards = () => {
           galleryTimeline?.kill();
 
           if (product) {
-            const id = product.dataset.index ?? "";
+            const id = product.dataset.id ?? "";
             if (title) {
               title.textContent = product.dataset.name ?? "";
             }
@@ -817,8 +733,9 @@ const Awards = () => {
                 </p>
               </AnimatedSection>
 
+              {upcomingAwardCards.length > 0 ? (
               <div className="grid gap-5 lg:grid-cols-3 lg:items-stretch">
-                {upcomingAwards.map((award, index) => (
+                {upcomingAwardCards.map((award, index) => (
                   <AnimatedSection key={award.id} delay={index * 0.08} className="h-full">
                     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] shadow-[0_24px_80px_-56px_rgba(0,0,0,0.95)] backdrop-blur-md">
                       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${award.shellClass} opacity-30`} />
@@ -843,7 +760,7 @@ const Awards = () => {
                       <div className="relative flex flex-1 flex-col p-5">
                         <div className="min-h-[5.5rem]">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffd978]">
-                            Upcoming Award
+                            {award.category}
                           </p>
                           <h3 className="mt-2 max-w-[12ch] font-display text-[2.15rem] font-bold leading-[0.9] text-white sm:text-[2.35rem]">
                             {award.title}
@@ -877,10 +794,10 @@ const Awards = () => {
                             Upcoming Showcase
                           </span>
                           <Link
-                            to="/contact"
+                            to={`/awards/nominate/${award.id}`}
                             className="inline-flex min-w-[11.25rem] items-center justify-center gap-2 rounded-full bg-[#ffd455] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-[#14110d] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[#ffdf7c]"
                           >
-                            {award.cta}
+                            Nominate Now
                             <ArrowUpRight className="h-4 w-4" />
                           </Link>
                         </div>
@@ -889,114 +806,87 @@ const Awards = () => {
                   </AnimatedSection>
                 ))}
               </div>
+              ) : !isLoadingAwards ? (
+                <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-white/12 bg-white/[0.04] p-6 text-center">
+                  <h3 className="font-display text-2xl font-semibold text-white">
+                    Upcoming awards are coming soon.
+                  </h3>
+                  <p className="mt-2 text-sm text-white/62">
+                    New nomination showcases are being prepared.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </section>
 
-          <section ref={parallaxSectionRef} className="awards-hpg">
-            <div className="awards-hpg__intro">
-              <p className="awards-hpg__kicker">Shivarpan Recognition Journey</p>
-              <h2 className="awards-hpg__title">Awards Rooted in Service, Trust, and Impact</h2>
-              <p className="awards-hpg__subtitle">
-                Scroll through the gallery to see how our NGO's on-ground initiatives,
-                partnerships, and measurable outcomes have been acknowledged over the years.
-              </p>
-            </div>
+          {isLoadingAwards ? (
+            <section className="px-4 py-16">
+              <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-white/12 bg-white/[0.04] p-6 text-center text-sm font-medium text-white/70">
+                Loading awards...
+              </div>
+            </section>
+          ) : null}
 
-            <div ref={parallaxWrapperRef} className="awards-hpg__wrapper">
-              <div ref={parallaxTrackRef} className="awards-hpg__track">
-                {parallaxSlides.map((slide) => (
-                  <figure key={slide.id} className="awards-hpg__media">
-                    <img
-                      src={slide.image}
-                      alt={`${slide.title} - ${slide.year}`}
-                      className="awards-hpg__img"
-                      draggable={false}
-                    />
-                    <figcaption className="awards-hpg__meta">
-                      <span>{slide.year}</span>
-                      <p>{slide.title}</p>
-                    </figcaption>
-                  </figure>
+          {!isLoadingAwards && awardRecognitions.length === 0 ? (
+            <section className="px-4 py-16">
+              <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-white/12 bg-white/[0.04] p-6 text-center">
+                <h2 className="font-display text-2xl font-semibold text-white">
+                  No awards are published yet.
+                </h2>
+                <p className="mt-2 text-sm text-white/62">
+                  Recognition updates are coming soon.
+                </p>
+              </div>
+            </section>
+          ) : null}
+
+          {awardRecognitions.length > 0 ? (
+            <>
+          <section className="px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1500px]">
+              <div className="mb-10 text-center">
+                <p className="text-sm font-semibold uppercase tracking-widest text-accent">
+                  Recognition Gallery
+                </p>
+                <h2 className="mt-2 font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
+                  Awards Rooted in Service, Trust, and Impact
+                </h2>
+              </div>
+
+              <div className="space-y-14">
+                {awardRecognitions.map((award) => (
+                  <section key={award.id}>
+                    <div className="mb-6 flex items-center gap-4">
+                      <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#ffd455] to-[#ffd455]" />
+                      <h3 className="text-center text-lg font-semibold tracking-wide text-white sm:text-2xl">
+                        {award.title}
+                      </h3>
+                      <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[#ffd455] to-[#ffd455]" />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {award.detailImages.map((image, imageIndex) => (
+                        <figure
+                          key={`${award.id}-${imageIndex}`}
+                          className="overflow-hidden rounded-xl border border-white/16 bg-white/[0.04]"
+                        >
+                          <img
+                            src={image}
+                            alt={`${award.title} image ${imageIndex + 1}`}
+                            className="aspect-[4/3] w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </figure>
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             </div>
           </section>
-
-          <section className="awards-grid-preview-section">
-            <div ref={productsRootRef} className="awards-products">
-              <ul className="awards-products__grid">
-                {awardRecognitions.map((award, index) => (
-                  <li
-                    key={award.id}
-                    className="awards-product"
-                    data-name={award.title}
-                    data-presenter={award.presenter}
-                    data-year={award.year}
-                    data-index={index}
-                    tabIndex={0}
-                  >
-                    <div className="awards-product__cta">
-                      <p>View Recognition</p>
-                    </div>
-                    <img src={award.image} alt={`${award.title} ceremony`} loading="lazy" decoding="async" />
-                    <div className="awards-product__info">
-                      <p className="awards-product__year">{award.year}</p>
-                      <h3>{award.title}</h3>
-                      <p>{award.summary}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="awards-products__preview">
-                <div ref={previewLeftRef} className="awards-product-preview --left">
-                  <div className="awards-product-preview__images">
-                    {previewLeftCards.flatMap((award) =>
-                      award.detailImages.map((image, imageIndex) => (
-                        <img
-                          key={`left-${award.id}-${imageIndex}`}
-                          data-id={`${award.id}`}
-                          src={image}
-                          alt={`${award.title} detail ${imageIndex + 1}`}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )),
-                    )}
-                  </div>
-                  <div className="awards-product-preview__details">
-                    <p className="awards-product-title">Recognition</p>
-                    <p className="awards-product-presenter">Presenter</p>
-                    <p className="awards-product-year">2026</p>
-                  </div>
-                  <div className="awards-product-preview__inside awards-masked-preview" />
-                </div>
-
-                <div ref={previewRightRef} className="awards-product-preview --right">
-                  <div className="awards-product-preview__images">
-                    {previewRightCards.flatMap((award) =>
-                      award.detailImages.map((image, imageIndex) => (
-                        <img
-                          key={`right-${award.id}-${imageIndex}`}
-                          data-id={`${award.id}`}
-                          src={image}
-                          alt={`${award.title} detail ${imageIndex + 1}`}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )),
-                    )}
-                  </div>
-                  <div className="awards-product-preview__details">
-                    <p className="awards-product-title">Recognition</p>
-                    <p className="awards-product-presenter">Presenter</p>
-                    <p className="awards-product-year">2026</p>
-                  </div>
-                  <div className="awards-product-preview__inside awards-masked-preview" />
-                </div>
-              </div>
-            </div>
-          </section>
+            </>
+          ) : null}
         </section>
       )}
     </div>

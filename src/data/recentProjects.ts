@@ -236,18 +236,6 @@ export const recentProjectsNumberFormat = new Intl.NumberFormat("en-IN");
 export const formatRecentProjectsInr = (value: number) =>
   `INR ${recentProjectsNumberFormat.format(value)}`;
 
-const recentProjectFallbackMap = new Map(
-  recentProjects.flatMap((project) => [
-    [project.slug, project],
-    [project.title.trim().toLowerCase(), project],
-  ]),
-);
-
-const getFallbackProject = (item: Pick<RecentProjectsApiItem, "slug" | "title">) =>
-  recentProjectFallbackMap.get(item.slug) ??
-  recentProjectFallbackMap.get(item.title.trim().toLowerCase()) ??
-  null;
-
 const readImpactString = (
   impact: Record<string, unknown> | null | undefined,
   ...keys: string[]
@@ -356,69 +344,57 @@ export const mapRecentProjectsFromApi = (
   items?: RecentProjectsApiItem[] | null,
 ): RecentProject[] => {
   if (!items || items.length === 0) {
-    return recentProjects;
+    return [];
   }
 
   return items.map((item) => {
-    const fallbackProject = getFallbackProject(item);
     const impact = item.impact_numbers ?? {};
     const focus =
       readImpactString(impact, "focus", "category", "sector", "track") ??
-      fallbackProject?.focus ??
       "Community Impact";
     const status = normalizeProjectStatus(
-      readImpactString(impact, "status", "project_status", "state") ??
-        fallbackProject?.status,
+      readImpactString(impact, "status", "project_status", "state"),
     );
     const objective =
       readImpactString(impact, "objective", "objective_text") ??
       item.summary?.trim() ??
       item.description?.trim() ??
-      fallbackProject?.objective ??
       "";
     const image = item.featured_image?.url?.trim()
       ? assetUrl(item.featured_image.url)
-      : fallbackProject?.image || aboutHero;
+      : "/placeholder.svg";
 
     return {
       title: item.title,
       slug: item.slug,
       image,
-      icon: resolveProjectIcon(focus, fallbackProject?.icon),
+      icon: resolveProjectIcon(focus),
       focus,
       status,
       location:
         readImpactString(impact, "location", "geography", "region") ??
-        fallbackProject?.location ??
         "Field location to be updated",
       timeline:
         readImpactString(impact, "timeline", "duration", "date_range") ??
-        fallbackProject?.timeline ??
         "Timeline to be updated",
       beneficiaries:
         readImpactNumber(impact, "beneficiaries", "people_reached", "reach") ??
-        fallbackProject?.beneficiaries ??
         0,
       volunteers:
         readImpactNumber(impact, "volunteers", "volunteer_count") ??
-        fallbackProject?.volunteers ??
         0,
       partners:
         readImpactNumber(impact, "partners", "partner_count", "delivery_partners") ??
-        fallbackProject?.partners ??
         0,
       budget:
         readImpactNumber(impact, "budget", "target", "allocated_budget") ??
-        fallbackProject?.budget ??
         0,
       spent:
         readImpactNumber(impact, "spent", "raised", "utilized", "deployed") ??
-        fallbackProject?.spent ??
         0,
       objective,
       outcomes:
         readImpactStringArray(impact, "outcomes", "highlights", "milestones") ??
-        fallbackProject?.outcomes ??
         [],
     };
   });

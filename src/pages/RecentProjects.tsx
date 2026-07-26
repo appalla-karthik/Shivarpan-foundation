@@ -4,7 +4,6 @@ import RecentProjectsIntro from "@/components/recent-projects/RecentProjectsIntr
 import RecentProjectsShowcase from "@/components/recent-projects/RecentProjectsShowcase";
 import {
   mapRecentProjectsFromApi,
-  recentIntroGridImages,
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
 import { getJson, reportApiError } from "@/lib/api";
@@ -14,14 +13,19 @@ const introColCount = 7;
 
 const RecentProjects = () => {
   const [apiProjects, setApiProjects] = useState<RecentProjectsApiItem[] | null>(null);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
   useEffect(() => {
-    getJson<RecentProjectsApiItem[]>("projects/")
+    getJson<RecentProjectsApiItem[]>("projects/", { cache: false })
       .then((response) => {
         setApiProjects(response);
       })
       .catch((error) => {
         reportApiError("Unable to fetch recent projects", error);
+        setApiProjects([]);
+      })
+      .finally(() => {
+        setIsLoadingProjects(false);
       });
   }, []);
 
@@ -34,9 +38,7 @@ const RecentProjects = () => {
   const gridRef = useRef<HTMLDivElement | null>(null);
   const introTitleRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<HTMLDivElement[]>([]);
-  const introImagePool = showcaseProjects.length > 0
-    ? showcaseProjects.map((project) => project.image)
-    : recentIntroGridImages;
+  const introImagePool = showcaseProjects.map((project) => project.image);
 
   const introRows = useMemo(
     () =>
@@ -53,6 +55,10 @@ const RecentProjects = () => {
   );
 
   useLayoutEffect(() => {
+    if (introRows.some((row) => row.some((image) => !image))) {
+      return;
+    }
+
     const rows = rowRefs.current.filter(Boolean);
     if (!rows.length) {
       return;
@@ -146,15 +152,27 @@ const RecentProjects = () => {
     };
   }, [introRows]);
 
+  if (isLoadingProjects) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center bg-background px-4">
+        <p className="rounded-full border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground">
+          Loading recent projects...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative overflow-hidden bg-background recent-projects-page">
-      <RecentProjectsIntro
-        introRows={introRows}
-        introSectionRef={introSectionRef}
-        introTitleRef={introTitleRef}
-        gridRef={gridRef}
-        rowRefs={rowRefs}
-      />
+      {showcaseProjects.length > 0 ? (
+        <RecentProjectsIntro
+          introRows={introRows}
+          introSectionRef={introSectionRef}
+          introTitleRef={introTitleRef}
+          gridRef={gridRef}
+          rowRefs={rowRefs}
+        />
+      ) : null}
       <RecentProjectsShowcase projects={showcaseProjects} />
     </div>
   );

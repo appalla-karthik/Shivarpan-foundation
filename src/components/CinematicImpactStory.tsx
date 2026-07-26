@@ -13,11 +13,9 @@ import {
   Sprout,
   type LucideIcon,
 } from "lucide-react";
-import { useRef, useState } from "react";
-import campaignEducation from "@/assets/campaign-education.jpg";
-import campaignEnvironment from "@/assets/campaign-environment.jpg";
-import campaignHealth from "@/assets/campaign-health.jpg";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { assetUrl, getJson } from "@/lib/api";
 import { createRevealTransition, motionTokens } from "@/lib/motion";
 
 type StoryBeat = {
@@ -27,7 +25,6 @@ type StoryBeat = {
   description: string;
   detail: string;
   metric: string;
-  image: string;
   icon: LucideIcon;
 };
 
@@ -59,7 +56,6 @@ const storyBeats: StoryBeat[] = [
     detail:
       "From enrollment support to year-round guidance, each intervention is tracked through community mentors.",
     metric: "1,200 learners supported",
-    image: campaignEducation,
     icon: GraduationCap,
   },
   {
@@ -71,7 +67,6 @@ const storyBeats: StoryBeat[] = [
     detail:
       "Follow-up protocols connect every patient with local volunteers for treatment continuity and health literacy.",
     metric: "500+ patients per flagship camp",
-    image: campaignHealth,
     icon: HeartPulse,
   },
   {
@@ -83,7 +78,6 @@ const storyBeats: StoryBeat[] = [
     detail:
       "Each plantation cycle includes maintenance windows, survival audits, and neighborhood ownership groups.",
     metric: "10,000+ saplings protected",
-    image: campaignEnvironment,
     icon: Sprout,
   },
 ];
@@ -94,7 +88,24 @@ const clampIndex = (value: number, max: number) =>
 const CinematicImpactStory = () => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [storyImages, setStoryImages] = useState<string[]>([]);
   const maxIndex = storyBeats.length - 1;
+
+  useEffect(() => {
+    getJson<any[]>("story-items/", { cache: false })
+      .then((items) => {
+        const images = Array.isArray(items)
+          ? items
+              .map((item) => assetUrl(item?.image))
+              .filter((image): image is string => Boolean(image))
+          : [];
+
+        setStoryImages(images);
+      })
+      .catch(() => {
+        setStoryImages([]);
+      });
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -152,26 +163,34 @@ const CinematicImpactStory = () => {
               <div className="space-y-4">
                 <div className="relative overflow-hidden rounded-[1.8rem] border border-primary-foreground/20 bg-primary-foreground/5 shadow-[0_40px_100px_-48px_rgba(0,0,0,0.85)] backdrop-blur-sm">
                   <div className="relative aspect-[3/4]">
-                    {storyBeats.map((beat, index) => {
-                      const isActive = index === activeIndex;
-                      return (
-                        <motion.img
-                          key={beat.id}
-                          src={beat.image}
-                          alt={beat.title}
-                          animate={{
-                            opacity: isActive ? 1 : 0,
-                            scale: isActive ? 1 : 1.08,
-                            filter: isActive ? "brightness(1)" : "brightness(0.75)",
-                          }}
-                          transition={{
-                            duration: motionTokens.duration.medium,
-                            ease: motionTokens.ease,
-                          }}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      );
-                    })}
+                    {storyImages.length > 0 ? (
+                      storyBeats.map((beat, index) => {
+                        const isActive = index === activeIndex;
+                        return (
+                          <motion.img
+                            key={beat.id}
+                            src={storyImages[index % storyImages.length]}
+                            alt={beat.title}
+                            animate={{
+                              opacity: isActive ? 1 : 0,
+                              scale: isActive ? 1 : 1.08,
+                              filter: isActive ? "brightness(1)" : "brightness(0.75)",
+                            }}
+                            transition={{
+                              duration: motionTokens.duration.medium,
+                              ease: motionTokens.ease,
+                            }}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        );
+                      })
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 p-6 text-center">
+                        <p className="max-w-xs text-sm font-medium leading-relaxed text-primary-foreground/70">
+                          New impact visuals are coming soon.
+                        </p>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/26 to-transparent" />
                   </div>
 

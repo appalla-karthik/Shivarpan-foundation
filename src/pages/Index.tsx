@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
-import aboutHero from "@/assets/about-hero-optimized.jpg";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
@@ -73,60 +72,21 @@ const impactStats = [
 
 const aboutPoints = aboutContent.highlights;
 
-const aboutVisuals = [
+const aboutVisualLayouts = [
   {
-    image: aboutHero,
     alt: "About Shivarpan",
     label: "Community Action",
     className: "col-span-2 h-52 sm:h-64",
   },
   {
-    image: campaignEducation,
     alt: "Education",
     label: "Education Drive",
     className: "h-36 sm:h-44",
   },
   {
-    image: campaignFood,
     alt: "Community support",
     label: "Food Support",
     className: "h-36 sm:h-44",
-  },
-];
-
-const galleryShots = [
-  { title: "Food Distribution", image: campaignFood, tag: "Relief" },
-  { title: "School Kit Drive", image: campaignEducation, tag: "Education" },
-  { title: "Rural Health Camp", image: campaignHealth, tag: "Healthcare" },
-  { title: "Tree Plantation", image: campaignEnvironment, tag: "Environment" },
-  { title: "Volunteer Day", image: campaignFood, tag: "Community" },
-];
-
-const fallbackHeroSlides = [
-  { title: "Community Work", url: "/hero-lcp.jpg", thumbUrl: "/hero-lcp.jpg", alt_text: "Shivarpan Foundation community work" },
-  { title: "Education Support", url: campaignEducation, thumbUrl: campaignEducationThumb, alt_text: "Education support by Shivarpan Foundation" },
-  { title: "Food Distribution", url: campaignFood, thumbUrl: campaignFoodThumb, alt_text: "Food distribution by Shivarpan Foundation" },
-  { title: "Healthcare Outreach", url: campaignHealth, thumbUrl: campaignHealthThumb, alt_text: "Healthcare outreach by Shivarpan Foundation" },
-];
-
-const stories = [
-  {
-    title: "How 500 Families Received Emergency Food Support",
-    excerpt: "A city-wide network delivered essential meal kits in high-need areas.",
-    date: "Feb 18, 2026",
-    image: campaignFood,
-  },
-  {
-    title: "Scholarship Winners of 2026 Announced",
-    excerpt: "50 students selected for financial and mentorship support.",
-    date: "Feb 10, 2026",
-    image: campaignEducation,
-  },
-  {
-    title: "Rural Camp Served 500 Patients in One Day",
-    excerpt: "Free screenings, medicines, and referrals delivered locally.",
-    date: "Jan 28, 2026",
-    image: campaignHealth,
   },
 ];
 
@@ -230,6 +190,7 @@ type MediaAsset = {
   id: number;
   title: string;
   alt_text: string;
+  media_type?: "image" | "video" | "pdf" | "document" | "other" | string;
   url: string;
 };
 
@@ -422,7 +383,7 @@ const Index = () => {
 
     const loadProjects = async () => {
       try {
-        const data = await getJson<ProjectPayload[]>("projects/", { cache: true, cacheTTL: 10 * 60 * 1000 }); // 10 minutes cache
+        const data = await getJson<ProjectPayload[]>("projects/", { cache: false });
         if (isMounted) {
           setProjectItems(data);
         }
@@ -442,15 +403,15 @@ const Index = () => {
       }
     };
 
-    void loadHomepage();
+    void Promise.all([loadHomepage(), loadProjects(), loadUpcomingEvents()]).catch((error) => {
+      console.error("Error loading priority homepage data:", error);
+    });
 
     const nonCriticalDataTimer = window.setTimeout(() => {
       Promise.all([
         loadTestimonials(),
         loadGallery(),
         loadStoryItems(),
-        loadProjects(),
-        loadUpcomingEvents(),
       ]).catch((error) => {
         console.error("Error loading non-critical data:", error);
       });
@@ -483,7 +444,7 @@ const Index = () => {
       ];
     }
 
-    return fallbackHeroSlides;
+    return [];
   }, [heroImageSrc, homepage]);
 
   useEffect(() => {
@@ -507,9 +468,15 @@ const Index = () => {
 
   const activeEvent = upcomingEvents[activeHeroSlide % Math.max(upcomingEvents.length, 1)];
   const nextHeroSlide = () => {
+    if (heroSlides.length === 0) {
+      return;
+    }
     setActiveHeroSlide((current) => (current + 1) % heroSlides.length);
   };
   const previousHeroSlide = () => {
+    if (heroSlides.length === 0) {
+      return;
+    }
     setActiveHeroSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length);
   };
 
@@ -533,13 +500,16 @@ const Index = () => {
 
   const aboutVisualsData = useMemo(
     () =>
-      aboutVisuals.map((visual, index) => {
-        const item = galleryItems[index];
+      galleryItems
+        .filter((item) => item.image)
+        .slice(0, aboutVisualLayouts.length)
+        .map((item, index) => {
+        const visual = aboutVisualLayouts[index];
         return {
           ...visual,
-          image: item?.image || visual.image,
-          alt: item?.title || visual.alt,
-          label: item?.category || visual.label,
+          image: item.image,
+          alt: item.title || visual.alt,
+          label: item.category || visual.label,
         };
       }),
     [galleryItems],
@@ -547,33 +517,33 @@ const Index = () => {
 
   const galleryShotsData = useMemo(
     () =>
-      galleryShots.map((shot, index) => {
-        const item = galleryItems[index];
-        return {
-          ...shot,
-          image: item?.image || shot.image,
-          title: item?.title || shot.title,
-          tag: item?.category || shot.tag,
-        };
-      }),
+      galleryItems
+        .filter((item) => item.image)
+        .slice(0, 5)
+        .map((item) => ({
+          title: item.title || "Gallery image",
+          image: item.image,
+          tag: item.category || "Gallery",
+        })),
     [galleryItems],
   );
 
   const storiesData = useMemo(
     () =>
-      stories.map((story, index) => {
-        const item = storyItems[index];
-        return {
-          ...story,
-          image: item?.image || story.image,
-          title: item?.title || story.title,
-        };
-      }),
+      storyItems
+        .filter((item) => item.image)
+        .slice(0, 3)
+        .map((item) => ({
+          title: item.title || "Impact story",
+          excerpt: item.description || "",
+          date: "Published story",
+          image: item.image,
+        })),
     [storyItems],
   );
 
   const normalizedRecentProjects = useMemo(
-    () => mapRecentProjectsFromApi(projectItems.length > 0 ? projectItems : null),
+    () => mapRecentProjectsFromApi(projectItems),
     [projectItems],
   );
 
@@ -634,6 +604,33 @@ const Index = () => {
             return null;
           }
 
+          const isVideo = isVideoMedia(slide);
+          const sharedMotionProps = {
+            initial: false,
+            animate: {
+              opacity: index === activeHeroSlide ? 1 : 0,
+              scale: index === activeHeroSlide ? 1.04 : 1,
+            },
+            transition: { duration: 1.15, ease: "easeInOut" as const },
+            className: "absolute inset-0 h-full w-full object-cover brightness-[1.08] contrast-[1.05] saturate-[1.08]",
+          };
+
+          if (isVideo) {
+            return (
+              <motion.video
+                key={`${slide.url}-${index}`}
+                src={slide.url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload={index === activeHeroSlide ? "auto" : "metadata"}
+                aria-label={slide.alt_text || slide.title || "Shivarpan Foundation video"}
+                {...sharedMotionProps}
+              />
+            );
+          }
+
           return (
             <motion.img
               key={`${slide.url}-${index}`}
@@ -643,18 +640,13 @@ const Index = () => {
               decoding={index === 0 ? "sync" : "async"}
               width={1800}
               height={1013}
-              initial={false}
-              animate={{
-                opacity: index === activeHeroSlide ? 1 : 0,
-                scale: index === activeHeroSlide ? 1.04 : 1,
-              }}
-              transition={{ duration: 1.15, ease: "easeInOut" }}
-              className="absolute inset-0 h-full w-full object-cover"
+              {...sharedMotionProps}
             />
           );
         })}
-        <div className="absolute inset-0 hero-overlay opacity-80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/65 via-foreground/40 to-transparent" />
+        <div className="absolute inset-0 hero-overlay opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/58 via-foreground/22 to-foreground/5" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-accent/18 via-transparent to-transparent" />
 
         <motion.div
           animate={{ x: [0, 18, 0], y: [0, -12, 0], opacity: [0.2, 0.45, 0.2] }}
@@ -696,7 +688,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
-              className="mb-6 text-center font-display text-4xl font-bold leading-tight text-primary-foreground sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
+              className="mb-6 text-center font-display text-4xl font-bold leading-tight text-primary-foreground drop-shadow-[0_3px_18px_rgba(0,0,0,0.45)] sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
             >
               {heroTitle}
             </motion.h1>
@@ -705,7 +697,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="mx-auto mb-8 max-w-4xl text-center text-base leading-relaxed text-primary-foreground/85 sm:text-lg lg:mx-0 lg:text-left"
+              className="mx-auto mb-8 max-w-4xl text-center text-base leading-relaxed text-primary-foreground/90 drop-shadow-[0_2px_12px_rgba(0,0,0,0.42)] sm:text-lg lg:mx-0 lg:text-left"
             >
               {heroDescription}
             </motion.p>
@@ -780,7 +772,9 @@ const Index = () => {
                     Upcoming Event
                   </span>
                   <span className="text-xs text-primary-foreground/65">
-                    {String(activeHeroSlide + 1).padStart(2, "0")} / {String(heroSlides.length).padStart(2, "0")}
+                    {heroSlides.length > 0
+                      ? `${String(activeHeroSlide + 1).padStart(2, "0")} / ${String(heroSlides.length).padStart(2, "0")}`
+                      : "00 / 00"}
                   </span>
                 </div>
 
@@ -815,7 +809,7 @@ const Index = () => {
                       Upcoming events will appear here
                     </h3>
                     <p className="mt-3 text-sm leading-6 text-primary-foreground/78">
-                      Add active events from the admin panel and this hero carousel will surface them automatically.
+                      Fresh event highlights are coming soon.
                     </p>
                     <Link to="/upcoming-events" className="mt-5 inline-flex">
                       <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
@@ -830,6 +824,7 @@ const Index = () => {
           </div>
         </div>
 
+        {heroSlides.length > 0 ? (
         <div className="absolute inset-x-0 bottom-7 z-20">
           <div className="container mx-auto flex flex-col gap-4 px-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
@@ -856,32 +851,45 @@ const Index = () => {
             </div>
 
             <div className="grid max-w-md grid-cols-4 gap-2">
-              {heroSlides.slice(0, 4).map((slide, index) => (
-                <button
-                  key={`hero-thumb-${slide.url}-${index}`}
-                  type="button"
-                  onClick={() => setActiveHeroSlide(index)}
-                  className={`relative h-14 overflow-hidden rounded-xl border transition ${
-                    index === activeHeroSlide
-                      ? "border-accent ring-2 ring-accent/45"
-                      : "border-primary-foreground/20 opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label={`Open hero slide ${index + 1}`}
-                >
-                  <img
-                    src={(slide as { thumbUrl?: string }).thumbUrl || slide.url}
-                    alt=""
-                    width={96}
-                    height={56}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
+              {heroSlides.slice(0, 4).map((slide, index) => {
+                const isVideo = isVideoMedia(slide);
+                const thumbnailUrl = (slide as { thumbUrl?: string }).thumbUrl;
+
+                return (
+                  <button
+                    key={`hero-thumb-${slide.url}-${index}`}
+                    type="button"
+                    onClick={() => setActiveHeroSlide(index)}
+                    className={`relative h-14 overflow-hidden rounded-xl border transition ${
+                      index === activeHeroSlide
+                        ? "border-accent ring-2 ring-accent/45"
+                        : "border-primary-foreground/20 opacity-70 hover:opacity-100"
+                    }`}
+                    aria-label={`Open hero slide ${index + 1}`}
+                  >
+                    {isVideo && !thumbnailUrl ? (
+                      <span className="flex h-full w-full items-center justify-center gap-1 bg-foreground/50 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground backdrop-blur-sm">
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        Video
+                      </span>
+                    ) : (
+                      <img
+                        src={thumbnailUrl || slide.url}
+                        alt=""
+                        width={96}
+                        height={56}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
+        ) : null}
 
       </section>
 
@@ -954,6 +962,7 @@ const Index = () => {
             </div>
           </AnimatedSection>
 
+          {projectsData.length > 0 ? (
           <div className="grid gap-6 xl:grid-cols-12">
             <AnimatedSection className="xl:col-span-8">
               <motion.article
@@ -969,7 +978,8 @@ const Index = () => {
                       alt={featuredProject.title}
                       width={720}
                       height={720}
-                      loading="lazy"
+                      loading="eager"
+                      fetchPriority="high"
                       decoding="async"
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
@@ -1073,7 +1083,7 @@ const Index = () => {
                             alt={project.title}
                             width={96}
                             height={96}
-                            loading="lazy"
+                            loading="eager"
                             decoding="async"
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
@@ -1127,6 +1137,16 @@ const Index = () => {
               </div>
             </AnimatedSection>
           </div>
+          ) : (
+            <div className="rounded-[1.6rem] border border-border bg-card p-6 text-center shadow-sm">
+              <h3 className="font-display text-2xl font-semibold text-foreground">
+                No recent projects are published yet.
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                New project updates are coming soon.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1290,8 +1310,9 @@ const Index = () => {
                   transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                   className="pointer-events-none absolute -inset-2 rounded-[2rem] border border-primary/20"
                 />
-                <div className="grid grid-cols-2 gap-4">
-                  {aboutVisualsData.map((visual, index) => (
+                {aboutVisualsData.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {aboutVisualsData.map((visual, index) => (
                     <motion.div
                       key={visual.alt}
                       initial={{ opacity: 0, y: 22 }}
@@ -1325,8 +1346,15 @@ const Index = () => {
                         </span>
                       </div>
                     </motion.div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-[1.8rem] border border-border/85 bg-card/90 p-6 text-center shadow-sm">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Community visuals are coming soon.
+                    </p>
+                  </div>
+                )}
               </div>
             </AnimatedSection>
           </div>
@@ -1358,45 +1386,53 @@ const Index = () => {
             </Link>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-12 gap-4">
-            <Link to="/gallery" className="block md:col-span-5">
-              <motion.div
-                whileHover={{ y: -6 }}
-                className="rounded-2xl overflow-hidden border border-border h-60 sm:h-72 md:h-[430px] group relative"
-              >
-                <img
-                  src={galleryShotsData[0].image}
-                  alt={galleryShotsData[0].title}
-                  width={900}
-                  height={520}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </motion.div>
-            </Link>
+          {galleryShotsData.length > 0 ? (
+            <div className="grid md:grid-cols-12 gap-4">
+              <Link to="/gallery" className="block md:col-span-5">
+                <motion.div
+                  whileHover={{ y: -6 }}
+                  className="rounded-2xl overflow-hidden border border-border h-60 sm:h-72 md:h-[430px] group relative"
+                >
+                  <img
+                    src={galleryShotsData[0].image}
+                    alt={galleryShotsData[0].title}
+                    width={900}
+                    height={520}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </motion.div>
+              </Link>
 
-            <div className="md:col-span-7 grid sm:grid-cols-2 gap-4">
-              {galleryShotsData.slice(1).map((shot) => (
-                <Link key={shot.title} to="/gallery" className="block">
-                  <motion.div
-                    whileHover={{ y: -6 }}
-                    className="rounded-2xl overflow-hidden border border-border h-48 sm:h-52 md:h-[206px] group relative"
-                  >
-                    <img
-                      src={shot.image}
-                      alt={shot.title}
-                      width={480}
-                      height={280}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </motion.div>
-                </Link>
-              ))}
+              <div className="md:col-span-7 grid sm:grid-cols-2 gap-4">
+                {galleryShotsData.slice(1).map((shot) => (
+                  <Link key={shot.title} to="/gallery" className="block">
+                    <motion.div
+                      whileHover={{ y: -6 }}
+                      className="rounded-2xl overflow-hidden border border-border h-48 sm:h-52 md:h-[206px] group relative"
+                    >
+                      <img
+                        src={shot.image}
+                        alt={shot.title}
+                        width={480}
+                        height={280}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-[1.6rem] border border-border bg-card p-6 text-center shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground">
+                New gallery moments are coming soon.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1411,58 +1447,66 @@ const Index = () => {
             <h2 className={sectionTitleClass}>Impact Stories From the Ground</h2>
           </AnimatedSection>
 
-          <div className="grid lg:grid-cols-5 gap-6">
-            <AnimatedSection className="lg:col-span-3">
-              <motion.div whileHover={{ y: -6 }} className="rounded-3xl overflow-hidden border border-border bg-card h-full shadow-lg group">
-                <div className="relative h-64 sm:h-72 md:h-80">
-                  <img
-                    src={storiesData[0].image}
-                    alt={storiesData[0].title}
-                    width={720}
-                    height={420}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
-                  <p className="absolute bottom-3 left-3 text-primary-foreground text-xs uppercase tracking-wider">Featured Story</p>
-                </div>
-                <div className="p-5 md:p-6">
-                  <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {storiesData[0].date}
+          {storiesData.length > 0 ? (
+            <div className="grid lg:grid-cols-5 gap-6">
+              <AnimatedSection className="lg:col-span-3">
+                <motion.div whileHover={{ y: -6 }} className="rounded-3xl overflow-hidden border border-border bg-card h-full shadow-lg group">
+                  <div className="relative h-64 sm:h-72 md:h-80">
+                    <img
+                      src={storiesData[0].image}
+                      alt={storiesData[0].title}
+                      width={720}
+                      height={420}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
+                    <p className="absolute bottom-3 left-3 text-primary-foreground text-xs uppercase tracking-wider">Featured Story</p>
                   </div>
-                  <h3 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-3">{storiesData[0].title}</h3>
-                  <p className="text-sm sm:text-base text-muted-foreground">{storiesData[0].excerpt}</p>
-                </div>
-              </motion.div>
-            </AnimatedSection>
-
-            <AnimatedSection className="lg:col-span-2">
-              <div className="space-y-4">
-                {storiesData.slice(1).map((story, i) => (
-                  <motion.div
-                    key={story.title}
-                    whileHover={{ x: 4 }}
-                    className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <p className="text-xs uppercase tracking-wider text-accent">Story {i + 2}</p>
-                      <span className="text-xs text-muted-foreground">{story.date}</span>
+                  <div className="p-5 md:p-6">
+                    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {storiesData[0].date}
                     </div>
-                    <h4 className="font-display text-lg font-semibold mb-2">{story.title}</h4>
-                    <p className="text-sm text-muted-foreground">{story.excerpt}</p>
-                  </motion.div>
-                ))}
-                <Link to="/news-stories" className="inline-block">
-                  <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                    View More
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </AnimatedSection>
-          </div>
+                    <h3 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-3">{storiesData[0].title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">{storiesData[0].excerpt}</p>
+                  </div>
+                </motion.div>
+              </AnimatedSection>
+
+              <AnimatedSection className="lg:col-span-2">
+                <div className="space-y-4">
+                  {storiesData.slice(1).map((story, i) => (
+                    <motion.div
+                      key={story.title}
+                      whileHover={{ x: 4 }}
+                      className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <p className="text-xs uppercase tracking-wider text-accent">Story {i + 2}</p>
+                        <span className="text-xs text-muted-foreground">{story.date}</span>
+                      </div>
+                      <h4 className="font-display text-lg font-semibold mb-2">{story.title}</h4>
+                      <p className="text-sm text-muted-foreground">{story.excerpt}</p>
+                    </motion.div>
+                  ))}
+                  <Link to="/news-stories" className="inline-block">
+                    <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                      View More
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </AnimatedSection>
+            </div>
+          ) : (
+            <div className="rounded-[1.6rem] border border-border bg-card p-6 text-center shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground">
+                New impact stories are coming soon.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

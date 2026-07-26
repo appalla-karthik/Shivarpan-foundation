@@ -174,7 +174,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                 {page.body ? (
                   <div dangerouslySetInnerHTML={{ __html: page.body }} />
                 ) : (
-                  <p>Content will appear here once the page body is added in the admin panel.</p>
+                  <p>Fresh content is being prepared for this page.</p>
                 )}
               </div>
 

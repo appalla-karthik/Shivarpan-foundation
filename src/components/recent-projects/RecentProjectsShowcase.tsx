@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   formatRecentProjectsInr,
-  recentProjects,
   recentProjectsNumberFormat,
   type RecentProject,
 } from "@/data/recentProjects";
@@ -33,10 +32,7 @@ const getUtilizationPercent = (spent: number, budget: number) =>
 const RecentProjectsShowcase = ({
   projects: providedProjects,
 }: RecentProjectsShowcaseProps) => {
-  const projects = useMemo(
-    () => providedProjects?.length ? providedProjects : recentProjects,
-    [providedProjects],
-  );
+  const projects = useMemo(() => providedProjects ?? [], [providedProjects]);
 
   const activeProjects = projects.filter((project) => project.status === "Active");
   const completedProjects = projects.filter(
@@ -88,6 +84,26 @@ const RecentProjectsShowcase = ({
     "Crisp portfolio reporting for partners and donors",
     "Measured delivery across food, education, health, and environment",
   ];
+
+  if (projects.length === 0) {
+    return (
+      <div className="relative border-t border-border/60 bg-background py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-border bg-card p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+              Recent Projects
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-foreground">
+              No recent projects are published yet.
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              New project updates are coming soon.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden border-t border-border/60 bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted))_32%,hsl(var(--background))_100%)]">

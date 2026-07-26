@@ -1,6 +1,6 @@
 import PageHero from "@/components/PageHero";
 import { Button } from "@/components/ui/button";
-import { podcastEpisodes } from "@/data/podcastEpisodes";
+import type { PodcastEpisodeItem } from "@/data/podcastEpisodes";
 import { ArrowLeft, Clock3, Mic, PlayCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -10,10 +10,9 @@ const PodcastEpisode = () => {
   const { episodeSlug } = useParams();
   const navigate = useNavigate();
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
-  const [episode, setEpisode] = useState(() =>
-    episodeSlug ? podcastEpisodes.find((item) => item.slug === episodeSlug) : undefined,
-  );
-  const [episodes, setEpisodes] = useState(podcastEpisodes);
+  const [episode, setEpisode] = useState<PodcastEpisodeItem | undefined>(undefined);
+  const [episodes, setEpisodes] = useState<PodcastEpisodeItem[]>([]);
+  const [isLoadingEpisode, setIsLoadingEpisode] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -22,9 +21,11 @@ const PodcastEpisode = () => {
 
   useEffect(() => {
     if (!episodeSlug) {
+      setIsLoadingEpisode(false);
       return;
     }
 
+    setIsLoadingEpisode(true);
     getJson<any[]>("podcast/episodes/")
       .then((res) => {
         const items = Array.isArray(res) ? res : [];
@@ -38,15 +39,14 @@ const PodcastEpisode = () => {
             duration: item?.duration_label ?? "0 min",
             summary: item?.summary ?? "",
             description: item?.description ?? "",
-            image: imageUrl || podcastEpisodes[0]?.image,
+            image: imageUrl || "/placeholder.svg",
             videoUrl: item?.audio_url ?? "",
           };
         });
-        if (formatted.length) {
-          setEpisodes(formatted as typeof podcastEpisodes);
-        }
+        setEpisodes(formatted as PodcastEpisodeItem[]);
         const matched = items.find((item: any) => item?.slug === episodeSlug);
         if (!matched) {
+          setEpisode(undefined);
           return;
         }
         const imageUrl = assetUrl(matched?.cover_image?.url);
@@ -58,13 +58,31 @@ const PodcastEpisode = () => {
           duration: matched?.duration_label ?? "0 min",
           summary: matched?.summary ?? "",
           description: matched?.description ?? "",
-          image: imageUrl || podcastEpisodes[0]?.image,
+          image: imageUrl || "/placeholder.svg",
           videoUrl: matched?.audio_url ?? "",
         };
         setEpisode(nextEpisode);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setEpisode(undefined);
+        setEpisodes([]);
+      })
+      .finally(() => {
+        setIsLoadingEpisode(false);
+      });
   }, [episodeSlug]);
+
+  if (isLoadingEpisode) {
+    return (
+      <div className="min-h-[70vh] bg-background px-4 py-20">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center">
+          <p className="text-sm font-medium text-muted-foreground">
+            Loading podcast episode...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!episode) {
     return (
