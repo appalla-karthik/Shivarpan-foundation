@@ -447,7 +447,15 @@ const Index = () => {
   }, []);
 
   const heroTitle = homepage?.hero_title?.trim() || homeHeroContent.title;
-  const heroDescription = homepage?.hero_subtitle?.trim() || homeHeroContent.description;
+  const configuredHeroDescription = homepage?.hero_subtitle?.trim() || "";
+  const heroDescription =
+    configuredHeroDescription && configuredHeroDescription.length <= 220
+      ? configuredHeroDescription
+      : homeHeroContent.description;
+  const heroTitleLines =
+    heroTitle === "Driven by Compassion, Committed to Change"
+      ? ["Driven by Compassion,", "Committed to Change"]
+      : [heroTitle];
   const heroCtaText = homepage?.hero_cta_text?.trim() || "Donate or Partner";
   const heroCtaUrl = homepage?.hero_cta_url?.trim() || "/contact";
   const heroImageSrc = assetUrl(homepage?.hero_background_image?.url);
@@ -741,7 +749,7 @@ const Index = () => {
             </motion.div>
           ) : null}
 
-          <div className="max-w-6xl">
+          <div className="max-w-6xl pl-2 sm:pl-4 lg:pl-6 xl:pl-8">
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -758,7 +766,11 @@ const Index = () => {
               transition={{ duration: 0.8, delay: 0.15 }}
               className="mb-6 text-center font-display text-4xl font-bold leading-[0.99] text-primary-foreground [text-shadow:0_3px_28px_rgba(0,0,0,0.82),0_1px_3px_rgba(0,0,0,0.95)] sm:text-5xl md:text-[3.5rem] lg:text-left lg:text-6xl"
             >
-              {heroTitle}
+              {heroTitleLines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
             </motion.h1>
 
             <motion.p

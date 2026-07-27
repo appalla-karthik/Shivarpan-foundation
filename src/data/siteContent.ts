@@ -38,7 +38,7 @@ export const homeHeroContent: HomeHeroContent = {
   badge: "Shivarpan Charitable Foundation",
   title: "Driven by Compassion, Committed to Change",
   description:
-    "Shivarpan Charitable Foundation was established in 2025 with a simple yet powerful purpose - to create meaningful change in the lives of underserved communities. Recognizing the challenges faced by vulnerable populations, the foundation works to address critical needs through initiatives in education, healthcare, and social support. Driven by compassion and a strong sense of responsibility toward society, the organization strives to provide individuals with the resources, guidance, and opportunities they need to build better futures. Through collective efforts, partnerships, and community engagement, Shivarpan Charitable Foundation aims to create sustainable solutions that uplift lives and strengthen communities.",
+    "Empowering underserved communities through education, healthcare, and social support initiatives that create lasting impact and brighter futures.",
 };
 
 export const aboutContent: AboutContent = {
