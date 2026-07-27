@@ -484,11 +484,8 @@ const DonateNow = () => {
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     placeholder="Phone Number"
-                    className="h-11 bg-background/70"
+                    className="h-11 bg-background/70 sm:col-span-2"
                   />
-                  <div className="flex h-11 items-center rounded-md border border-input bg-background/70 px-3 text-sm text-muted-foreground">
-                    Razorpay checkout will show available methods
-                  </div>
                 </div>
 
                 <div className="mt-4 rounded-[1.6rem] border border-border/80 bg-background/55 p-4">
