@@ -20,55 +20,63 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const isNavLinkActive = (path: string) =>
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-md border-b border-border shadow-sm">
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-white shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex h-20 items-center justify-between gap-3">
           {/* Logo */}
-          <Link to="/" className="group">
+          <Link to="/" className="group shrink-0" aria-label="Shivarpan Foundation home">
             <div className="rounded-xl bg-card px-2 py-1 shadow-sm ring-1 ring-border/70 transition-all duration-300 group-hover:shadow-md group-hover:ring-primary/40">
               <img
                 src={shivarpanLogo}
                 alt="Shivarpan Foundation logo"
                 width={240}
                 height={59}
-                className="h-10 sm:h-11 w-auto object-contain"
+                className="h-10 w-auto object-contain sm:h-11"
               />
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden xl:flex items-center gap-3">
-            <div className="flex items-center gap-1">
+          <div className="hidden min-w-0 flex-1 items-center justify-end gap-2.5 xl:flex">
+            <div className="flex min-w-0 items-center gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative group ${
-                    location.pathname === link.to
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className={`group relative flex-none whitespace-nowrap rounded-[10px] px-2.5 py-2.5 text-sm font-medium leading-none transition-[color,background-color,box-shadow] duration-200 ${
+                    isNavLinkActive(link.to)
+                      ? "bg-[#eef5f7] text-[#075f82] shadow-[inset_0_0_0_1px_rgba(7,95,130,0.08)]"
+                      : "text-muted-foreground hover:bg-slate-50 hover:text-[#163c50]"
                   }`}
                 >
                   {link.label}
-                  {location.pathname === link.to && (
+                  {isNavLinkActive(link.to) && (
                     <motion.div
                       layoutId="navbar-indicator"
-                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      className="absolute -bottom-px left-2 right-2 h-[3px] rounded-t-full bg-[#08709a]"
                     />
                   )}
                 </Link>
               ))}
             </div>
-            <Link to="/upcoming-events">
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold">
+            <Link to="/upcoming-events" className="shrink-0">
+              <Button
+                variant="outline"
+                className="h-10 whitespace-nowrap border-primary px-3 text-sm font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+              >
                 Upcoming Events
               </Button>
             </Link>
-            <Link to="/donate-now">
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-sm">
-                <Heart className="w-4 h-4 mr-2" />
+            <Link to="/donate-now" className="shrink-0">
+              <Button className="h-10 whitespace-nowrap bg-accent px-3 text-sm font-semibold text-accent-foreground shadow-sm hover:bg-accent/90">
+                <Heart className="mr-2 h-4 w-4" />
                 Donate Now
               </Button>
             </Link>
@@ -76,8 +84,11 @@ const Navbar = () => {
 
           {/* Mobile Toggle */}
           <button
+            type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="xl:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-muted xl:hidden"
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isOpen}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -105,7 +116,7 @@ const Navbar = () => {
                     to={link.to}
                     onClick={() => setIsOpen(false)}
                     className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === link.to
+                      isNavLinkActive(link.to)
                         ? "text-primary bg-primary/10"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}

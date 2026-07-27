@@ -25,6 +25,7 @@ from foundation.models import (
     DonationTransaction,
     Homepage,
     HomepageSection,
+    ImpactVideo,
     MagazineIssue,
     MagazineStory,
     MediaAsset,
@@ -34,6 +35,7 @@ from foundation.models import (
     PodcastEpisode,
     Project,
     SiteSettings,
+    Story,
     Subscriber,
     Tag,
     TeamMember,
@@ -261,6 +263,117 @@ class ArticleAdmin(RichTextAdminMixin, admin.ModelAdmin):
         ),
         ("Social Preview", {"fields": ("social_share_title", "social_share_description", "social_share_image")}),
     )
+
+
+@admin.register(Story, site=admin_site)
+class StoryAdmin(RichTextAdminMixin, admin.ModelAdmin):
+    list_display = (
+        "title",
+        "category",
+        "status",
+        "publish_at",
+        "is_featured",
+        "sort_order",
+        "updated_at",
+    )
+    list_filter = ("status", "is_featured", "category")
+    list_editable = ("is_featured", "sort_order")
+    search_fields = ("title", "slug", "excerpt", "body", "location_label")
+    prepopulated_fields = {"slug": ("title",)}
+    autocomplete_fields = ("featured_image", "og_image")
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "title",
+                    "slug",
+                    "status",
+                    "publish_at",
+                    "is_featured",
+                    "sort_order",
+                )
+            },
+        ),
+        (
+            "Story content",
+            {
+                "fields": (
+                    "featured_image",
+                    "excerpt",
+                    "body",
+                    "date_label",
+                    "location_label",
+                    "read_time",
+                    "category",
+                )
+            },
+        ),
+        (
+            "SEO",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "seo_title",
+                    "seo_description",
+                    "canonical_url",
+                    "og_title",
+                    "og_description",
+                    "og_image",
+                ),
+            },
+        ),
+    )
+
+
+@admin.register(ImpactVideo, site=admin_site)
+class ImpactVideoAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "category",
+        "video_source",
+        "published_on",
+        "is_featured",
+        "is_active",
+        "sort_order",
+    )
+    list_filter = ("is_active", "is_featured", "category", "published_on")
+    list_editable = ("is_featured", "is_active", "sort_order")
+    search_fields = ("title", "slug", "short_description", "category", "youtube_url")
+    prepopulated_fields = {"slug": ("title",)}
+    fieldsets = (
+        (
+            "Video details",
+            {
+                "fields": (
+                    "title",
+                    "slug",
+                    "short_description",
+                    "category",
+                    "published_on",
+                )
+            },
+        ),
+        (
+            "Video source",
+            {
+                "description": (
+                    "Choose one source only. YouTube is recommended and its thumbnail "
+                    "loads automatically unless a custom thumbnail is uploaded. "
+                    "For a direct upload, add both the video file and its thumbnail here."
+                ),
+                "fields": ("youtube_url", "video_file", "thumbnail"),
+            },
+        ),
+        (
+            "Display controls",
+            {"fields": ("is_featured", "sort_order", "is_active")},
+        ),
+    )
+
+    @admin.display(description="Source")
+    def video_source(self, obj):
+        return "YouTube" if obj.youtube_url else "Direct upload"
 
 
 @admin.register(MagazineIssue, site=admin_site)

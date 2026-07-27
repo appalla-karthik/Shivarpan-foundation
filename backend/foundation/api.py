@@ -13,6 +13,7 @@ from django.http import Http404, HttpResponse
 from django.db.models import BigIntegerField, Count, F, Max, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.utils.html import strip_tags
 from rest_framework import generics, parsers, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -38,6 +39,7 @@ from foundation.models import (
     DonationTransaction,
     Homepage,
     HomepageSection,
+    ImpactVideo,
     MagazineIssue,
     MagazineStory,
     MediaAsset,
@@ -47,6 +49,7 @@ from foundation.models import (
     Award,
     Project,
     Subscriber,
+    Story,
     Tag,
     TeamMember,
     Testimonial,
@@ -54,6 +57,7 @@ from foundation.models import (
     PageView,
     Visitor,
 )
+from .video_utils import youtube_embed_url, youtube_thumbnail_url
 
 
 def notify_admin(subject: str, lines: list[str], reply_to: str = "", attachments: list | None = None) -> None:
@@ -169,6 +173,122 @@ class ArticleSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class StorySerializer(serializers.ModelSerializer):
+    featured_image = MediaAssetSerializer(read_only=True)
+    og_image = MediaAssetSerializer(read_only=True)
+    has_body = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Story
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "excerpt",
+            "body",
+            "has_body",
+            "date_label",
+            "location_label",
+            "read_time",
+            "category",
+            "featured_image",
+            "is_featured",
+            "sort_order",
+            "publish_at",
+            "seo_title",
+            "seo_description",
+            "canonical_url",
+            "og_title",
+            "og_description",
+            "og_image",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_has_body(self, obj):
+        text_content = strip_tags(obj.body or "").replace("\xa0", " ").strip()
+        return bool(text_content)
+
+
+class ImpactVideoSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.SerializerMethodField()
+    video_file = serializers.SerializerMethodField()
+    source_type = serializers.SerializerMethodField()
+    youtube_video_id = serializers.CharField(read_only=True)
+    youtube_thumbnail_url = serializers.SerializerMethodField()
+    youtube_embed_url = serializers.SerializerMethodField()
+    effective_thumbnail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ImpactVideo
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "short_description",
+            "thumbnail",
+            "youtube_url",
+            "video_file",
+            "source_type",
+            "youtube_video_id",
+            "youtube_thumbnail_url",
+            "youtube_embed_url",
+            "effective_thumbnail_url",
+            "category",
+            "published_on",
+            "is_featured",
+            "sort_order",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_source_type(self, obj):
+        return "youtube" if obj.youtube_video_id else "upload"
+
+    def get_thumbnail(self, obj):
+        if not obj.thumbnail:
+            return None
+        try:
+            url = obj.thumbnail.url
+        except (ValueError, OSError):
+            return None
+        return {
+            "title": obj.title,
+            "alt_text": f"{obj.title} video thumbnail",
+            "media_type": "image",
+            "url": url,
+        }
+
+    def get_video_file(self, obj):
+        if not obj.video_file:
+            return None
+        try:
+            url = obj.video_file.url
+        except (ValueError, OSError):
+            return None
+        return {
+            "title": obj.title,
+            "alt_text": "",
+            "media_type": "video",
+            "url": url,
+        }
+
+    def get_youtube_thumbnail_url(self, obj):
+        return youtube_thumbnail_url(obj.youtube_video_id)
+
+    def get_youtube_embed_url(self, obj):
+        return youtube_embed_url(obj.youtube_video_id)
+
+    def get_effective_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            try:
+                return obj.thumbnail.url
+            except (ValueError, OSError):
+                pass
+        return youtube_thumbnail_url(obj.youtube_video_id)
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -480,6 +600,33 @@ class ArticleViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
         if not obj:
             return Response({"detail": "Not found."}, status=404)
         return Response(self.get_serializer(obj).data)
+
+
+class StoryViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = (
+        Story.objects.select_related("featured_image", "og_image")
+        .all()
+        .order_by("sort_order", "-publish_at")
+    )
+    serializer_class = StorySerializer
+    filterset_fields = ["slug", "is_featured", "category"]
+
+    @action(detail=False, methods=["get"], url_path=r"by-slug/(?P<slug>[-a-zA-Z0-9_]+)")
+    def by_slug(self, request, slug=None):
+        obj = self.get_queryset().filter(slug=slug).first()
+        if not obj:
+            return Response({"detail": "Not found."}, status=404)
+        return Response(self.get_serializer(obj).data)
+
+
+class ImpactVideoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = (
+        ImpactVideo.objects.filter(is_active=True)
+        .filter(Q(youtube_url__gt="") | Q(video_file__gt=""))
+        .order_by("sort_order", "-published_on", "-created_at")
+    )
+    serializer_class = ImpactVideoSerializer
+    filterset_fields = ["slug", "is_featured", "category"]
 
 
 class ProjectViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):

@@ -15,6 +15,7 @@ from foundation.api import (
     DonationVerifyAPIView,
     DonationWebhookAPIView,
     HomepageAPIView,
+    ImpactVideoViewSet,
     MagazineIssueViewSet,
     MagazineStoryViewSet,
     MediaAssetFileAPIView,
@@ -23,6 +24,7 @@ from foundation.api import (
     PodcastEpisodeViewSet,
     ProjectViewSet,
     SubscriberCreateAPIView,
+    StoryViewSet,
     TeamMemberViewSet,
     TestimonialViewSet,
     UpcomingEventViewSet,
@@ -42,6 +44,8 @@ router.register(r"magazine/issues", MagazineIssueViewSet, basename="magazine-iss
 router.register(r"magazine/stories", MagazineStoryViewSet, basename="magazine-story")
 router.register(r"upcoming-events", UpcomingEventViewSet, basename="upcoming-event")
 router.register(r"story-items", StoryItemViewSet, basename="story-item")
+router.register(r"stories", StoryViewSet, basename="story")
+router.register(r"impact-videos", ImpactVideoViewSet, basename="impact-video")
 
 urlpatterns = [
     path("", include(router.urls)),

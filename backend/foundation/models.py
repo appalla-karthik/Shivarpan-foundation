@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+
+from .video_utils import extract_youtube_video_id
 
 
 class TimeStampedModel(models.Model):
@@ -593,6 +596,83 @@ class Story(PublishableModel, SeoFields):
 
     class Meta:
         ordering = ["sort_order", "-publish_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class ImpactVideo(TimeStampedModel):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    short_description = models.TextField(blank=True)
+    thumbnail = models.ImageField(
+        upload_to="impact-videos/thumbnails/%Y/%m/",
+        blank=True,
+        help_text=(
+            "Optional for YouTube videos because the YouTube thumbnail is loaded "
+            "automatically. Recommended for uploaded MP4 videos."
+        ),
+    )
+    youtube_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Primary option. Paste a YouTube watch, Shorts, live, or youtu.be link.",
+    )
+    video_file = models.FileField(
+        upload_to="impact-videos/videos/%Y/%m/",
+        blank=True,
+        help_text="Optional direct MP4, WebM, MOV, or M4V upload (maximum 100 MB).",
+    )
+    category = models.CharField(max_length=120, blank=True)
+    published_on = models.DateField(null=True, blank=True)
+    is_featured = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "-published_on", "-created_at"]
+        verbose_name = "Impact Video"
+        verbose_name_plural = "Impact Videos"
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        has_youtube = bool((self.youtube_url or "").strip())
+        has_upload = bool(self.video_file)
+
+        if has_youtube == has_upload:
+            message = "Choose exactly one video source: a YouTube link or a direct video upload."
+            errors["youtube_url"] = message
+            errors["video_file"] = message
+
+        if has_youtube and not extract_youtube_video_id(self.youtube_url):
+            errors["youtube_url"] = (
+                "Enter a valid public YouTube watch, Shorts, live, embed, or youtu.be link."
+            )
+
+        if has_upload:
+            file_name = (self.video_file.name or "").lower()
+            if not file_name.endswith((".mp4", ".webm", ".mov", ".m4v")):
+                errors["video_file"] = "Upload an MP4, WebM, MOV, or M4V video file."
+            try:
+                file_size = self.video_file.size
+            except (AttributeError, OSError, ValueError):
+                file_size = 0
+            if file_size > 100 * 1024 * 1024:
+                errors["video_file"] = (
+                    "Direct video uploads must be 100 MB or smaller. "
+                    "Use YouTube for larger videos."
+                )
+
+        if has_upload and not self.thumbnail:
+            errors["thumbnail"] = "Add a thumbnail for a directly uploaded video."
+
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def youtube_video_id(self) -> str:
+        return extract_youtube_video_id(self.youtube_url)
 
     def __str__(self) -> str:
         return self.title

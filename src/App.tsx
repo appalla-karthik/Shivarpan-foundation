@@ -14,6 +14,7 @@ const DynamicPage = lazy(() => import("./pages/DynamicPage"));
 const About = lazy(() => import("./pages/About"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const NewsStories = lazy(() => import("./pages/NewsStories"));
+const StoryDetail = lazy(() => import("./pages/StoryDetail"));
 const RecentProjects = lazy(() => import("./pages/RecentProjects"));
 const Awards = lazy(() => import("./pages/Awards"));
 const AwardNomination = lazy(() => import("./pages/AwardNomination"));
@@ -106,6 +107,7 @@ const AppRoutes = () => {
             <Route path="/about" element={<DynamicPage slug="about" fallback={<About />} />} />
             <Route path="/gallery" element={<DynamicPage slug="gallery" fallback={<Gallery />} />} />
             <Route path="/news-stories" element={<DynamicPage slug="news-stories" fallback={<NewsStories />} />} />
+            <Route path="/news-stories/:storySlug" element={<StoryDetail />} />
             <Route path="/recent-projects" element={<DynamicPage slug="recent-projects" fallback={<RecentProjects />} />} />
             <Route path="/awards" element={<Awards />} />
             <Route path="/awards/nominate/:awardId" element={<AwardNomination />} />

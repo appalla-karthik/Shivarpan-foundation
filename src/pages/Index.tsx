@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
+import FeaturedVideoTeaser from "@/components/FeaturedVideoTeaser";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
@@ -41,6 +42,7 @@ import {
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
 import { assetUrl, getJson, reportApiError } from "@/lib/api";
+import type { ImpactVideoPayload } from "@/types/content";
 
 const ImpactCounter = lazy(() => import("@/components/ImpactCounter"));
 const CinematicImpactStory = lazy(() => import("@/components/CinematicImpactStory"));
@@ -205,6 +207,7 @@ type StoryItemPayload = {
   id: number;
   title: string;
   image: string | null;
+  description?: string;
 };
 
 type ProjectPayload = RecentProjectsApiItem;
@@ -319,6 +322,7 @@ const Index = () => {
   const [testimonialItems, setTestimonialItems] = useState<TestimonialPayload[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItemPayload[]>([]);
   const [storyItems, setStoryItems] = useState<StoryItemPayload[]>([]);
+  const [impactVideos, setImpactVideos] = useState<ImpactVideoPayload[]>([]);
   const [projectItems, setProjectItems] = useState<ProjectPayload[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventPayload[]>([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
@@ -381,6 +385,20 @@ const Index = () => {
       }
     };
 
+    const loadImpactVideos = async () => {
+      try {
+        const data = await getJson<ImpactVideoPayload[]>("impact-videos/", {
+          cache: true,
+          cacheTTL: 60 * 1000,
+        });
+        if (isMounted) {
+          setImpactVideos(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        reportApiError("Impact videos API error", error);
+      }
+    };
+
     const loadProjects = async () => {
       try {
         const data = await getJson<ProjectPayload[]>("projects/", { cache: false });
@@ -403,7 +421,12 @@ const Index = () => {
       }
     };
 
-    void Promise.all([loadHomepage(), loadProjects(), loadUpcomingEvents()]).catch((error) => {
+    void Promise.all([
+      loadHomepage(),
+      loadProjects(),
+      loadUpcomingEvents(),
+      loadImpactVideos(),
+    ]).catch((error) => {
       console.error("Error loading priority homepage data:", error);
     });
 
@@ -547,6 +570,16 @@ const Index = () => {
           image: item.image,
         })),
     [storyItems],
+  );
+
+  const featuredImpactVideo = useMemo(
+    () =>
+      [...impactVideos].sort(
+        (a, b) =>
+          Number(b.is_featured) - Number(a.is_featured) ||
+          a.sort_order - b.sort_order,
+      )[0],
+    [impactVideos],
   );
 
   const normalizedRecentProjects = useMemo(
@@ -1447,6 +1480,10 @@ const Index = () => {
           )}
         </div>
       </section>
+
+      {featuredImpactVideo ? (
+        <FeaturedVideoTeaser video={featuredImpactVideo} />
+      ) : null}
 
       {/* Stories */}
       <section className="py-16 md:py-24">

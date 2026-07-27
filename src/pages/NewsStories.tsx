@@ -12,11 +12,16 @@
   import { ScrollTrigger } from "gsap/ScrollTrigger";
   import { ArrowUpRight, Calendar, Clock3, MapPin, Sparkles } from "lucide-react";
   import { Badge } from "@/components/ui/badge";
-  import { assetUrl, getJson } from "@/lib/api";
+  import ImpactVideoSection from "@/components/ImpactVideoSection";
+  import { assetUrl, getJson, reportApiError } from "@/lib/api";
+  import type { ImpactVideoPayload, StoryPayload } from "@/types/content";
+  import { Link } from "react-router-dom";
 
   gsap.registerPlugin(ScrollTrigger);
 
   interface Story {
+    id: number;
+    slug?: string;
     title: string;
     image: string;
     date: string;
@@ -24,6 +29,7 @@
     readTime: string;
     category: string;
     excerpt: string;
+    hasBody: boolean;
   }
 
   interface HeroGridItem {
@@ -82,6 +88,7 @@
 
     const [heroImages, setHeroImages] = useState<any[]>([]);
     const [storiesData, setStoriesData] = useState<Story[]>([]);
+    const [impactVideos, setImpactVideos] = useState<ImpactVideoPayload[]>([]);
     const [isLoadingStories, setIsLoadingStories] = useState(true);
 
     const getHeroMedia = (imageIndex: number) => {
@@ -91,36 +98,107 @@
       return heroImages[(imageIndex - 1) % heroImages.length];
     };
   useEffect(() => {
-    getJson<any[]>("story-items/")
-      .then((items) => {
-        const storyItems = Array.isArray(items) ? items : [];
+    let isMounted = true;
 
-        setHeroImages(
-          storyItems.map((item: any) => ({
-            image: assetUrl(item.image),
-            alt: item.title || "Hero Image",
-          })),
+    Promise.allSettled([
+      getJson<any[]>("story-items/", { cache: true }),
+      getJson<StoryPayload[]>("stories/", { cache: true }),
+      getJson<ImpactVideoPayload[]>("impact-videos/", { cache: true }),
+    ])
+      .then(([storyItemsResult, storiesResult, videosResult]) => {
+        if (!isMounted) return;
+
+        const storyItems =
+          storyItemsResult.status === "fulfilled" && Array.isArray(storyItemsResult.value)
+            ? storyItemsResult.value
+            : [];
+        const publishedStories =
+          storiesResult.status === "fulfilled" && Array.isArray(storiesResult.value)
+            ? storiesResult.value
+            : [];
+        const videos =
+          videosResult.status === "fulfilled" && Array.isArray(videosResult.value)
+            ? videosResult.value
+            : [];
+
+        const storyItemHeroImages = storyItems.map((item: any) => ({
+          image: assetUrl(item.image),
+          alt: item.title || "Shivarpan Foundation impact",
+        }));
+        const publishedStoryHeroImages = publishedStories
+          .filter((story) => story.featured_image?.url)
+          .map((story) => ({
+            image: assetUrl(story.featured_image?.url),
+            alt: story.featured_image?.alt_text || story.title,
+          }));
+        const nextHeroImages =
+          storyItemHeroImages.length > 0
+            ? storyItemHeroImages
+            : publishedStoryHeroImages;
+        setHeroImages(nextHeroImages);
+        setImpactVideos(videos);
+
+        const fullStories = [...publishedStories]
+          .sort(
+            (a, b) =>
+              Number(b.is_featured) - Number(a.is_featured) ||
+              a.sort_order - b.sort_order,
+          )
+          .map((story, index): Story => ({
+            id: story.id,
+            slug: story.slug,
+            title: story.title,
+            image:
+              assetUrl(story.featured_image?.url) ||
+              nextHeroImages[index % Math.max(nextHeroImages.length, 1)]?.image ||
+              "/placeholder.svg",
+            date:
+              story.date_label ||
+              new Intl.DateTimeFormat("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }).format(new Date(story.publish_at)),
+            location: story.location_label || "India",
+            readTime: story.read_time || "3 min read",
+            category: story.category || "Story",
+            excerpt: story.excerpt || "A field dispatch from Shivarpan Foundation.",
+            hasBody: story.has_body,
+          }));
+
+        const imageOnlyStories = storyItems.map(
+          (item: any, index: number): Story => ({
+            id: item.id ?? index,
+            title: item.title || "Impact story",
+            image: assetUrl(item.image) || "/placeholder.svg",
+            date: "Field archive",
+            location: "India",
+            readTime: "Photo story",
+            category: "Story",
+            excerpt: "A moment from Shivarpan Foundation's work on the ground.",
+            hasBody: false,
+          }),
         );
 
-        setStoriesData(
-          storyItems.map((item: any) => ({
-            title: item.title,
-            image: assetUrl(item.image),
-            date: item.date || "Mar 2026",
-            location: item.location || "India",
-            readTime: "3 min read",
-            category: item.category || "Story",
-            excerpt: item.description || "Story description",
-          })),
-        );
-      })
-      .catch(() => {
-        setHeroImages([]);
-        setStoriesData([]);
+        setStoriesData(fullStories.length > 0 ? fullStories : imageOnlyStories);
+
+        if (storyItemsResult.status === "rejected") {
+          reportApiError("Unable to load story media", storyItemsResult.reason);
+        }
+        if (storiesResult.status === "rejected") {
+          reportApiError("Unable to load published stories", storiesResult.reason);
+        }
+        if (videosResult.status === "rejected") {
+          reportApiError("Unable to load impact videos", videosResult.reason);
+        }
       })
       .finally(() => {
-        setIsLoadingStories(false);
+        if (isMounted) setIsLoadingStories(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
     const reduceMotion = useReducedMotion();
@@ -493,10 +571,15 @@
                       </p>
                     </div>
 
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                      Read Lead Dispatch
-                      <ArrowUpRight className="h-4 w-4" />
-                    </div>
+                    {leadStory?.hasBody && leadStory.slug ? (
+                      <Link
+                        to={`/news-stories/${leadStory.slug}`}
+                        className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/75"
+                      >
+                        Read Lead Dispatch
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </motion.article>
@@ -582,6 +665,8 @@
               </div>
             </div>
 
+            <ImpactVideoSection videos={impactVideos} />
+
             <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {dispatchStories.map((story, index) => (
                 <motion.article
@@ -630,10 +715,15 @@
                         <Clock3 className="h-3.5 w-3.5 text-primary" />
                         {story.readTime}
                       </span>
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                        Read Dispatch
-                        <ArrowUpRight className="h-4 w-4" />
-                      </span>
+                      {story.hasBody && story.slug ? (
+                        <Link
+                          to={`/news-stories/${story.slug}`}
+                          className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/75"
+                        >
+                          Read Dispatch
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
                 </motion.article>
@@ -642,6 +732,9 @@
           </div>
         </section>
           </>
+        ) : null}
+        {storiesData.length === 0 && impactVideos.length > 0 ? (
+          <ImpactVideoSection videos={impactVideos} />
         ) : null}
       </div>
     );
