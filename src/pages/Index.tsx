@@ -18,13 +18,13 @@ import {
   Mic,
   Play,
   Sparkles,
-  Star,
   TreePine,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
 import FeaturedVideoTeaser from "@/components/FeaturedVideoTeaser";
+import TestimonialsCarousel from "@/components/TestimonialsCarousel";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
@@ -1633,88 +1633,7 @@ const Index = () => {
               </div>
             </AnimatedSection>
 
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              {testimonialsToShow.map((item, index) => (
-                <AnimatedSection key={`${item.name}-${index}`} delay={index * 0.08}>
-                  <motion.div
-                    whileHover={{ y: -6 }}
-                    className="group relative h-full overflow-hidden rounded-[1.35rem] border border-border/80 bg-card shadow-[0_28px_70px_-55px_hsl(var(--foreground))]"
-                  >
-                    <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.glow} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
-                    <div className="relative aspect-video overflow-hidden bg-foreground/90">
-                      {item.media?.url ? (
-                        isVideoMedia(item.media) ? (
-                          <video
-                            src={item.media.url}
-                            controls
-                            preload="metadata"
-                            playsInline
-                            poster={item.photoUrl || undefined}
-                            className="h-full w-full bg-black object-contain"
-                            aria-label={`${item.name} testimonial video`}
-                          />
-                        ) : (
-                          <img
-                            src={item.media.url}
-                            alt={`${item.name} testimonial`}
-                            width={420}
-                            height={236}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          />
-                        )
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),linear-gradient(135deg,hsl(var(--foreground)),hsl(var(--primary)))]">
-                          <span className="font-display text-3xl font-bold text-primary-foreground">
-                            {item.monogram}
-                          </span>
-                        </div>
-                      )}
-                      {item.isVideoReview ? (
-                        <span className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                          Video review
-                        </span>
-                      ) : (
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/70 to-transparent" />
-                      )}
-                    </div>
-                    <div className="relative flex items-center gap-1 px-4 pt-4 text-accent">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <p className="relative mt-3 px-4 text-sm leading-relaxed text-foreground/90">
-                      “{item.quote}”
-                    </p>
-                    <div className="relative mt-4 flex items-center gap-3 px-4 pb-4">
-                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
-                        {"photoUrl" in item && item.photoUrl ? (
-                          <img
-                            src={item.photoUrl}
-                            alt={item.name}
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          item.monogram
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{item.role}</p>
-                      </div>
-                      <span className="ml-auto inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-                        {item.tag}
-                      </span>
-                    </div>
-                  </motion.div>
-                </AnimatedSection>
-              ))}
-            </div>
+            <TestimonialsCarousel items={testimonialsToShow} />
           </div>
         </section>
       ) : null}
