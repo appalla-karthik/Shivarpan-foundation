@@ -27,15 +27,13 @@ interface TestimonialsCarouselProps {
 const AUTOPLAY_INTERVAL_MS = 4500;
 
 const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
-  const [viewportRef, emblaApi] = useEmblaCarousel(
-    {
-      align: "start",
-      loop: items.length > 1,
-      slidesToScroll: 1,
-      skipSnaps: false,
-    },
-    [items.length],
-  );
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  const [viewportRef, emblaApi] = useEmblaCarousel({
+    align: "start",
+    loop: safeItems.length > 1,
+    slidesToScroll: 1,
+    skipSnaps: false,
+  });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [snapCount, setSnapCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -96,13 +94,13 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
     >
       <div ref={viewportRef} className="overflow-hidden" aria-roledescription="carousel">
         <div className="flex gap-5">
-          {items.map((item, index) => (
+          {safeItems.map((item, index) => (
             <div
               key={`${item.name}-${index}`}
               className="min-w-0 flex-[0_0_100%] sm:flex-[0_0_calc(50%-0.625rem)] lg:flex-[0_0_calc(33.333%-0.875rem)] xl:flex-[0_0_calc(25%-0.9375rem)]"
               role="group"
               aria-roledescription="slide"
-              aria-label={`${index + 1} of ${items.length}`}
+              aria-label={`${index + 1} of ${safeItems.length}`}
             >
               <motion.article
                 whileHover={{ y: -5 }}
