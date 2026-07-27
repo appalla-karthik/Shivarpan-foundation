@@ -54,7 +54,7 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
   }, []);
 
   const featuredEvent = events[0];
-  const pageHeroImage = assetUrl(heroImage || featuredEvent?.poster_image?.url) || "/placeholder.svg";
+  const pageHeroImage = assetUrl(heroImage);
   const openPreview = (event: UpcomingEventPayload) => {
     setPreviewEvent(event);
     setIsPreviewOpen(true);
@@ -65,7 +65,7 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
       <PageHero
         title={heroTitle || "Upcoming Events"}
         subtitle={heroSubtitle || featuredEvent?.subtitle || "Explore upcoming programs, camps, drives, and community gatherings."}
-        image={pageHeroImage}
+        image={pageHeroImage || undefined}
       />
 
       <section className="relative py-10 sm:py-12 md:py-16">
@@ -105,22 +105,28 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
                     <button
                       type="button"
                       onClick={() => openPreview(event)}
-                      className="relative block aspect-[4/3] w-full overflow-hidden bg-muted/30 text-left"
+                      className="relative block aspect-square w-full overflow-hidden bg-[#07171d] text-left"
                       aria-label={`View ${event.title} poster`}
                     >
                       <img
                         src={posterUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-[-4%] h-[108%] w-[108%] scale-110 object-cover opacity-38 blur-xl saturate-110"
+                      />
+                      <img
+                        src={posterUrl}
                         alt={event.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="relative z-[1] h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.015]"
                         loading={index < 3 ? "eager" : "lazy"}
                         decoding="async"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/72 via-foreground/12 to-transparent" />
-                      <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground backdrop-blur-sm">
+                      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/70 via-transparent to-black/16" />
+                      <span className="absolute left-3 top-3 z-[3] inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
                         <Sparkles className="h-3.5 w-3.5 text-accent" />
                         {event.sort_order === 0 ? "Featured Event" : `Event ${index + 1}`}
                       </span>
-                      <span className="absolute bottom-3 left-3 rounded-full border border-primary-foreground/20 bg-primary-foreground/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
+                      <span className="absolute bottom-3 left-3 z-[3] rounded-full border border-white/25 bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
                         View poster
                       </span>
                     </button>

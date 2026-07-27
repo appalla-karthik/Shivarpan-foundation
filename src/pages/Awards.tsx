@@ -116,13 +116,14 @@ const Awards = () => {
 
   const parallaxSlides = useMemo(
     () => {
-      if (awardRecognitions.length === 0) {
+      const pastAwards = awardRecognitions.filter((award) => !award.isUpcoming);
+      if (pastAwards.length === 0) {
         return [];
       }
 
       return (
       Array.from({ length: 14 }, (_, index) => {
-        const award = awardRecognitions[index % awardRecognitions.length];
+        const award = pastAwards[index % pastAwards.length];
         return {
           id: `${award.id}-${index}`,
           image: award.image,
@@ -136,11 +137,15 @@ const Awards = () => {
   );
 
   const previewLeftCards = useMemo(
-    () => awardRecognitions,
+    () => awardRecognitions.filter((award) => !award.isUpcoming),
     [awardRecognitions],
   );
   const previewRightCards = useMemo(
-    () => awardRecognitions,
+    () => awardRecognitions.filter((award) => !award.isUpcoming),
+    [awardRecognitions],
+  );
+  const pastAwardRecognitions = useMemo(
+    () => awardRecognitions.filter((award) => !award.isUpcoming),
     [awardRecognitions],
   );
 
@@ -740,14 +745,20 @@ const Awards = () => {
                     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] shadow-[0_24px_80px_-56px_rgba(0,0,0,0.95)] backdrop-blur-md">
                       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${award.shellClass} opacity-30`} />
 
-                      <div className="relative overflow-hidden border-b border-white/10">
+                      <div className="relative h-[22rem] overflow-hidden border-b border-white/10 bg-black">
+                        <img
+                          src={award.image}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-[-4%] h-[108%] w-[108%] scale-110 object-cover opacity-38 blur-xl saturate-110"
+                        />
                         <img
                           src={award.image}
                           alt={award.title}
-                          className="h-[22rem] w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                          className="relative z-[1] h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.015]"
                         />
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_32%,rgba(0,0,0,0.52)_100%)]" />
-                        <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-3">
+                        <div className="absolute inset-0 z-[2] bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,transparent_52%,rgba(0,0,0,0.5)_100%)]" />
+                        <div className="absolute left-4 right-4 top-4 z-[3] flex items-center justify-between gap-3">
                           <span className="rounded-full border border-white/18 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/88 backdrop-blur-sm">
                             {award.presenter}
                           </span>
@@ -840,7 +851,7 @@ const Awards = () => {
             </section>
           ) : null}
 
-          {awardRecognitions.length > 0 ? (
+          {pastAwardRecognitions.length > 0 ? (
             <>
           <section className="px-4 py-16 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1500px]">
@@ -854,7 +865,7 @@ const Awards = () => {
               </div>
 
               <div className="space-y-14">
-                {awardRecognitions.map((award) => (
+                {pastAwardRecognitions.map((award) => (
                   <section key={award.id}>
                     <div className="mb-6 flex items-center gap-4">
                       <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#ffd455] to-[#ffd455]" />
