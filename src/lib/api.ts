@@ -89,7 +89,7 @@ setInterval(() => {
 
 const deriveFallbackBaseUrl = () => {
   if (typeof window === "undefined") {
-    return "http://127.0.0.1:8000/api";
+    return import.meta.env.VITE_API_URL || "https://shivarpanfoundation.org/api";
   }
 
   const { hostname, protocol } = window.location;
@@ -103,7 +103,7 @@ const deriveFallbackBaseUrl = () => {
     return `${protocol}//${derivedHost}/api`;
   }
 
-  return "http://127.0.0.1:8000/api";
+    return import.meta.env.VITE_API_URL || "https://shivarpanfoundation.org/api";
 };
 
 const rawBaseUrl =

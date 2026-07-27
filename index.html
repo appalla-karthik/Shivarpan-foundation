@@ -25,18 +25,73 @@
     </noscript>
     
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: https: http:;
-      connect-src 'self' https://api.github.com https://shivarpan-foundation-backend.onrender.com http://127.0.0.1:8000 http://localhost:8000 ws://127.0.0.1:8000 ws://localhost:8000;
-      media-src 'self' https: http://127.0.0.1:8000 http://localhost:8000;
-      object-src 'none';
-      base-uri 'self';
-      form-action 'self';
-    ">
+    <!-- Content Security Policy -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+
+  script-src
+    'self'
+    'unsafe-inline'
+    'unsafe-eval'
+    https://www.googletagmanager.com
+    https://checkout.razorpay.com
+    https://cdn.razorpay.com;
+
+  style-src
+    'self'
+    'unsafe-inline'
+    https://fonts.googleapis.com;
+
+  font-src
+    'self'
+    data:
+    https://fonts.gstatic.com;
+
+  img-src
+    'self'
+    data:
+    blob:
+    https:
+    http:;
+
+  connect-src
+    'self'
+    https://shivarpanfoundation.org
+    https://www.shivarpanfoundation.org
+    https://api.github.com
+    https://shivarpan-foundation-backend.onrender.com
+    https://api.razorpay.com
+    https://checkout.razorpay.com
+    https://cdn.razorpay.com
+    https://lumberjack.razorpay.com
+    https://*.razorpay.com
+    http://127.0.0.1:8000
+    http://localhost:8000
+    ws://127.0.0.1:8000
+    ws://localhost:8000;
+
+  frame-src
+    'self'
+    https://checkout.razorpay.com
+    https://api.razorpay.com
+    https://*.razorpay.com;
+
+  child-src
+    'self'
+    https://checkout.razorpay.com
+    https://api.razorpay.com
+    https://*.razorpay.com;
+
+  media-src
+    'self'
+    https:
+    http://127.0.0.1:8000
+    http://localhost:8000;
+
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self' https://api.razorpay.com https://checkout.razorpay.com;
+">
     
     <title>Shivarpan Charitable Foundation</title>
     <meta
