@@ -11,6 +11,7 @@ from foundation.api import (
     AwardViewSet,
     ContactSubmissionCreateAPIView,
     DonationCheckoutAPIView,
+    DonationFundingSummaryAPIView,
     DonationVerifyAPIView,
     HomepageAPIView,
     MagazineIssueViewSet,
@@ -51,4 +52,9 @@ urlpatterns = [
     path("award-nominations/", AwardNominationCreateAPIView.as_view(), name="award-nomination-submit"),
     path("donations/checkout/", DonationCheckoutAPIView.as_view(), name="donation-checkout"),
     path("donations/verify/", DonationVerifyAPIView.as_view(), name="donation-verify"),
+    path(
+        "donations/funding-summary/",
+        DonationFundingSummaryAPIView.as_view(),
+        name="donation-funding-summary",
+    ),
 ]

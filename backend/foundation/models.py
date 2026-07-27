@@ -328,6 +328,8 @@ class Donation(TimeStampedModel):
         default=DonationType.ONE_TIME,
     )
     payment_mode_preference = models.CharField(max_length=50, blank=True)
+    project_slug = models.SlugField(max_length=255, blank=True)
+    project_title = models.CharField(max_length=255, blank=True)
     donation_category = models.CharField(max_length=80, blank=True)
     atg_requested = models.BooleanField(default=False)
     pan_number = models.CharField(max_length=10, blank=True)

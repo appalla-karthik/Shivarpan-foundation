@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import IntegrityError
 from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
+from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import generics, parsers, serializers, viewsets
 from rest_framework.decorators import action
@@ -627,6 +628,16 @@ class DonationCheckoutSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     email = serializers.EmailField()
     phone = serializers.CharField(max_length=32)
+    project_slug = serializers.SlugField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+    )
+    project_title = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+    )
     payment_mode = serializers.CharField(max_length=50, required=False, allow_blank=True)
     donation_category = serializers.CharField(max_length=80, required=False, allow_blank=True)
     atg_requested = serializers.BooleanField(required=False, default=False)
@@ -699,6 +710,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
             currency=data["currency"],
             donation_type=data["donation_type"],
             payment_mode_preference=data.get("payment_mode", ""),
+            project_slug=data.get("project_slug", ""),
+            project_title=data.get("project_title", ""),
             donation_category=data.get("donation_category", ""),
             atg_requested=data.get("atg_requested", False),
             pan_number=data.get("pan_number", ""),
@@ -709,6 +722,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "payment_mode": data.get("payment_mode", ""),
                 "donation_category": data.get("donation_category", ""),
                 "atg_requested": data.get("atg_requested", False),
+                "project_slug": data.get("project_slug", ""),
+                "project_title": data.get("project_title", ""),
             },
         )
         create_donation_log(
@@ -722,6 +737,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "payment_mode_preference": donation.payment_mode_preference,
                 "donation_category": donation.donation_category,
                 "atg_requested": donation.atg_requested,
+                "project_slug": donation.project_slug,
+                "project_title": donation.project_title,
             },
         )
         notify_admin(
@@ -751,6 +768,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "donation_type": donation.donation_type,
                 "donation_category": donation.donation_category,
                 "atg_requested": str(donation.atg_requested),
+                "project_slug": donation.project_slug,
+                "project_title": donation.project_title,
             }
             create_donation_log(
                 donation,
@@ -783,6 +802,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                     {
                         "checkout_type": "one_time",
                         "donation_id": donation.id,
+                        "project_slug": donation.project_slug,
+                        "project_title": donation.project_title,
                         "key": settings.RAZORPAY_KEY_ID,
                         "amount": amount_paise,
                         "currency": donation.currency,
@@ -849,6 +870,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 {
                     "checkout_type": "monthly",
                     "donation_id": donation.id,
+                    "project_slug": donation.project_slug,
+                    "project_title": donation.project_title,
                     "key": settings.RAZORPAY_KEY_ID,
                     "amount": amount_paise,
                     "currency": donation.currency,
@@ -985,7 +1008,58 @@ class DonationVerifyAPIView(generics.GenericAPIView):
                 "donation_id": donation.id,
             }
         )
+class DonationFundingSummaryAPIView(generics.GenericAPIView):
+    authentication_classes = []
+    permission_classes = []
 
+    def get(self, request):
+        paid_statuses = [
+            Donation.Status.PAID,
+            Donation.Status.SUBSCRIPTION_AUTHORIZED,
+        ]
+
+        totals = (
+            Donation.objects.filter(
+                status__in=paid_statuses,
+                project_slug__gt="",
+            )
+            .values("project_slug")
+            .annotate(
+                project_title=Max("project_title"),
+                raised=Sum("amount"),
+                donors=Count("id"),
+                one_time_raised=Sum(
+                    "amount",
+                    filter=Q(donation_type=Donation.DonationType.ONE_TIME),
+                ),
+                monthly_raised=Sum(
+                    "amount",
+                    filter=Q(donation_type=Donation.DonationType.MONTHLY),
+                ),
+            )
+            .order_by("project_title", "project_slug")
+        )
+
+        projects = [
+            {
+                "project_slug": row["project_slug"],
+                "project_title": row["project_title"] or row["project_slug"],
+                "raised": row["raised"] or 0,
+                "donors": row["donors"] or 0,
+                "one_time_raised": row["one_time_raised"] or 0,
+                "monthly_raised": row["monthly_raised"] or 0,
+            }
+            for row in totals
+        ]
+
+        return Response(
+            {
+                "projects": projects,
+                "total_raised": sum(project["raised"] for project in projects),
+                "total_donors": sum(project["donors"] for project in projects),
+                "updated_at": timezone.now().isoformat(),
+            }
+        )
 class StoryItemViewSet(ModelViewSet):
     queryset = StoryItem.objects.filter(is_active=True).order_by("sort_order")
     serializer_class = StoryItemSerializer
