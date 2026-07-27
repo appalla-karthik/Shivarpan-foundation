@@ -13,11 +13,12 @@ from foundation.api import (
     DonationCheckoutAPIView,
     DonationFundingSummaryAPIView,
     DonationVerifyAPIView,
+    DonationWebhookAPIView,
     HomepageAPIView,
     MagazineIssueViewSet,
     MagazineStoryViewSet,
     MediaAssetFileAPIView,
-    MediaAssetViewSet,
+    PageViewCreateAPIView,
     PageViewSet,
     PodcastEpisodeViewSet,
     ProjectViewSet,
@@ -32,7 +33,6 @@ router = DefaultRouter()
 router.register(r"pages", PageViewSet, basename="page")
 router.register(r"gallery", GalleryItemViewSet, basename="gallery")
 router.register(r"articles", ArticleViewSet, basename="article")
-router.register(r"media", MediaAssetViewSet, basename="media")
 router.register(r"projects", ProjectViewSet, basename="project")
 router.register(r"awards", AwardViewSet, basename="award")
 router.register(r"testimonials", TestimonialViewSet, basename="testimonial")
@@ -47,11 +47,13 @@ urlpatterns = [
     path("", include(router.urls)),
     path("media-assets/<int:pk>/file/", MediaAssetFileAPIView.as_view(), name="mediaasset-file"),
     path("homepage/", HomepageAPIView.as_view(), name="homepage"),
+    path("analytics/page-view/", PageViewCreateAPIView.as_view(), name="analytics-page-view"),
     path("contact/", ContactSubmissionCreateAPIView.as_view(), name="contact-submit"),
     path("newsletter/subscribe/", SubscriberCreateAPIView.as_view(), name="newsletter-subscribe"),
     path("award-nominations/", AwardNominationCreateAPIView.as_view(), name="award-nomination-submit"),
     path("donations/checkout/", DonationCheckoutAPIView.as_view(), name="donation-checkout"),
     path("donations/verify/", DonationVerifyAPIView.as_view(), name="donation-verify"),
+    path("donations/webhook/", DonationWebhookAPIView.as_view(), name="donation-webhook"),
     path(
         "donations/funding-summary/",
         DonationFundingSummaryAPIView.as_view(),

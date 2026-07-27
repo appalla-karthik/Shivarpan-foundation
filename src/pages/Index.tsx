@@ -329,7 +329,7 @@ const Index = () => {
 
     const loadHomepage = async () => {
       try {
-        const data = await getJson<HomepagePayload>("homepage/", { cache: true, cacheTTL: 10 * 60 * 1000 }); // 10 minutes cache
+        const data = await getJson<HomepagePayload>("homepage/", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setHomepage(data);
         }
@@ -340,7 +340,7 @@ const Index = () => {
 
     const loadTestimonials = async () => {
       try {
-        const data = await getJson<TestimonialPayload[]>("testimonials/", { cache: true, cacheTTL: 15 * 60 * 1000 }); // 15 minutes cache
+        const data = await getJson<TestimonialPayload[]>("testimonials/", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setTestimonialItems(data);
         }
@@ -351,7 +351,7 @@ const Index = () => {
 
     const loadGallery = async () => {
       try {
-        const data = await getJson<GalleryItemPayload[]>("gallery/", { cache: true, cacheTTL: 20 * 60 * 1000 }); // 20 minutes cache
+        const data = await getJson<GalleryItemPayload[]>("gallery/", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setGalleryItems(
             data.map((item) => ({
@@ -367,7 +367,7 @@ const Index = () => {
 
     const loadStoryItems = async () => {
       try {
-        const data = await getJson<StoryItemPayload[]>("story-items/", { cache: true, cacheTTL: 15 * 60 * 1000 }); // 15 minutes cache
+        const data = await getJson<StoryItemPayload[]>("story-items/", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setStoryItems(
             data.map((item) => ({
@@ -394,7 +394,7 @@ const Index = () => {
 
     const loadUpcomingEvents = async () => {
       try {
-        const data = await getJson<UpcomingEventPayload[]>("upcoming-events/?is_active=true", { cache: true, cacheTTL: 10 * 60 * 1000 });
+        const data = await getJson<UpcomingEventPayload[]>("upcoming-events/?is_active=true", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setUpcomingEvents(data.filter((event) => event.title).slice(0, 4));
         }
@@ -427,9 +427,15 @@ const Index = () => {
   const heroDescription = homepage?.hero_subtitle?.trim() || homeHeroContent.description;
   const heroCtaText = homepage?.hero_cta_text?.trim() || "Donate or Partner";
   const heroCtaUrl = homepage?.hero_cta_url?.trim() || "/contact";
-  const heroImageSrc = homepage?.hero_background_image?.url;
+  const heroImageSrc = assetUrl(homepage?.hero_background_image?.url);
   const heroSlides = useMemo(() => {
-    const uploadedSlides = homepage?.hero_slider_images?.filter((image) => image.url) ?? [];
+    const uploadedSlides =
+      homepage?.hero_slider_images
+        ?.filter((image) => image.url)
+        .map((image) => ({
+          ...image,
+          url: assetUrl(image.url),
+        })) ?? [];
 
     if (uploadedSlides.length > 0) {
       return uploadedSlides;
@@ -487,7 +493,7 @@ const Index = () => {
         return {
           ...fallback,
           name: logo.title || fallback.name,
-          logoUrl: logo.url,
+          logoUrl: assetUrl(logo.url),
           logoWidth: "logoWidth" in fallback ? fallback.logoWidth : undefined,
           logoHeight: "logoHeight" in fallback ? fallback.logoHeight : undefined,
         };
@@ -505,6 +511,7 @@ const Index = () => {
         .slice(0, aboutVisualLayouts.length)
         .map((item, index) => {
         const visual = aboutVisualLayouts[index];
+        const testimonialMedia = item.media || item.photo;
         return {
           ...visual,
           image: item.image,
@@ -585,8 +592,10 @@ const Index = () => {
           tag: item.organization || "Partner",
           monogram: initials,
           glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
-          photoUrl: item.photo?.url,
-          media: item.media || item.photo,
+          photoUrl: assetUrl(item.photo?.url),
+          media: testimonialMedia
+            ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
+            : null,
         };
       });
     }
@@ -612,7 +621,7 @@ const Index = () => {
               scale: index === activeHeroSlide ? 1.04 : 1,
             },
             transition: { duration: 1.15, ease: "easeInOut" as const },
-            className: "absolute inset-0 h-full w-full object-cover brightness-[1.08] contrast-[1.05] saturate-[1.08]",
+            className: "absolute inset-0 h-full w-full object-cover brightness-[0.94] contrast-[1.08] saturate-[1.06]",
           };
 
           if (isVideo) {
@@ -644,9 +653,11 @@ const Index = () => {
             />
           );
         })}
-        <div className="absolute inset-0 hero-overlay opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/58 via-foreground/22 to-foreground/5" />
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-accent/18 via-transparent to-transparent" />
+        <div className="absolute inset-0 hero-overlay opacity-[0.12]" />
+        <div className="absolute inset-0 bg-foreground/55 lg:hidden" />
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,hsl(var(--foreground)/0.88)_0%,hsl(var(--foreground)/0.72)_34%,hsl(var(--foreground)/0.30)_62%,hsl(var(--foreground)/0.08)_100%)] lg:block" />
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/18 via-transparent to-foreground/72" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_85%_28%,hsl(var(--accent)/0.18),transparent_58%)]" />
 
         <motion.div
           animate={{ x: [0, 18, 0], y: [0, -12, 0], opacity: [0.2, 0.45, 0.2] }}
@@ -678,7 +689,7 @@ const Index = () => {
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
-              className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-1.5 text-xs text-primary-foreground backdrop-blur-sm sm:text-sm lg:mx-0"
+              className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-foreground/48 px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_12px_34px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md sm:text-sm lg:mx-0"
             >
               <Sparkles className="h-4 w-4 text-accent" />
               {homeHeroContent.badge}
@@ -688,7 +699,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
-              className="mb-6 text-center font-display text-4xl font-bold leading-tight text-primary-foreground drop-shadow-[0_3px_18px_rgba(0,0,0,0.45)] sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
+              className="mb-6 text-center font-display text-4xl font-bold leading-[0.98] text-primary-foreground [text-shadow:0_3px_28px_rgba(0,0,0,0.82),0_1px_3px_rgba(0,0,0,0.95)] sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
             >
               {heroTitle}
             </motion.h1>
@@ -697,7 +708,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="mx-auto mb-8 max-w-4xl text-center text-base leading-relaxed text-primary-foreground/90 drop-shadow-[0_2px_12px_rgba(0,0,0,0.42)] sm:text-lg lg:mx-0 lg:text-left"
+              className="mx-auto mb-8 max-w-4xl text-center text-base font-medium leading-relaxed text-primary-foreground/95 [text-shadow:0_2px_14px_rgba(0,0,0,0.85)] sm:text-lg lg:mx-0 lg:text-left"
             >
               {heroDescription}
             </motion.p>
@@ -713,7 +724,7 @@ const Index = () => {
                   key={stat.label}
                   whileHover={{ y: -6, scale: 1.01 }}
                   transition={{ type: "spring", stiffness: 220, damping: 18 }}
-                  className="group relative overflow-hidden rounded-2xl border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-3 backdrop-blur-sm"
+                  className="group relative overflow-hidden rounded-2xl border border-primary-foreground/22 bg-foreground/52 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(0,0,0,0.95)] backdrop-blur-lg"
                 >
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/15 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   <motion.div
@@ -750,7 +761,7 @@ const Index = () => {
               <Link to="/recent-projects">
                 <Button
                   variant="outline"
-                  className="border-primary-foreground/35 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground hover:text-foreground"
+                  className="border-primary-foreground/40 bg-foreground/42 text-primary-foreground shadow-lg backdrop-blur-md hover:bg-primary-foreground hover:text-foreground"
                 >
                   Explore Projects
                 </Button>
@@ -762,7 +773,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.35 }}
-              className="relative overflow-hidden rounded-[1.6rem] border border-primary-foreground/20 bg-foreground/42 p-5 text-primary-foreground shadow-[0_28px_90px_-55px_rgba(0,0,0,0.95)] backdrop-blur-md"
+              className="relative overflow-hidden rounded-[1.6rem] border border-primary-foreground/25 bg-[linear-gradient(145deg,hsl(var(--foreground)/0.76)_0%,hsl(var(--foreground)/0.62)_58%,hsl(var(--primary)/0.48)_100%)] p-5 text-primary-foreground shadow-[0_30px_90px_-42px_rgba(0,0,0,0.98)] backdrop-blur-xl"
             >
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-foreground/10 via-transparent to-accent/10" />
               <div className="relative">
@@ -831,7 +842,7 @@ const Index = () => {
               <button
                 type="button"
                 onClick={previousHeroSlide}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/25 bg-foreground/35 text-primary-foreground backdrop-blur-md transition hover:bg-primary-foreground hover:text-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/30 bg-foreground/58 text-primary-foreground shadow-lg backdrop-blur-lg transition hover:bg-primary-foreground hover:text-foreground"
                 aria-label="Previous hero slide"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -839,7 +850,7 @@ const Index = () => {
               <button
                 type="button"
                 onClick={nextHeroSlide}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/25 bg-foreground/35 text-primary-foreground backdrop-blur-md transition hover:bg-primary-foreground hover:text-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/30 bg-foreground/58 text-primary-foreground shadow-lg backdrop-blur-lg transition hover:bg-primary-foreground hover:text-foreground"
                 aria-label="Next hero slide"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -850,8 +861,8 @@ const Index = () => {
               </span>
             </div>
 
-            <div className="grid max-w-md grid-cols-4 gap-2">
-              {heroSlides.slice(0, 4).map((slide, index) => {
+            <div className="flex w-full flex-wrap justify-center gap-2 lg:max-w-3xl lg:justify-end">
+              {heroSlides.map((slide, index) => {
                 const isVideo = isVideoMedia(slide);
                 const thumbnailUrl = (slide as { thumbUrl?: string }).thumbUrl;
 
@@ -860,12 +871,13 @@ const Index = () => {
                     key={`hero-thumb-${slide.url}-${index}`}
                     type="button"
                     onClick={() => setActiveHeroSlide(index)}
-                    className={`relative h-14 overflow-hidden rounded-xl border transition ${
+                    className={`relative h-14 w-[4.5rem] shrink-0 overflow-hidden rounded-xl border transition sm:w-20 ${
                       index === activeHeroSlide
                         ? "border-accent ring-2 ring-accent/45"
                         : "border-primary-foreground/20 opacity-70 hover:opacity-100"
                     }`}
                     aria-label={`Open hero slide ${index + 1}`}
+                    aria-current={index === activeHeroSlide ? "true" : undefined}
                   >
                     {isVideo && !thumbnailUrl ? (
                       <span className="flex h-full w-full items-center justify-center gap-1 bg-foreground/50 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground backdrop-blur-sm">

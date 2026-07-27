@@ -66,6 +66,9 @@ class RazorpayClient:
     def create_subscription(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/subscriptions", payload)
 
+    def fetch_payment(self, payment_id: str) -> dict[str, Any]:
+        return self._request("GET", f"/payments/{payment_id}")
+
 
 def verify_payment_signature(secret: str, order_id: str, payment_id: str, signature: str) -> bool:
     generated = hmac.new(
@@ -80,6 +83,17 @@ def verify_subscription_signature(secret: str, payment_id: str, subscription_id:
     generated = hmac.new(
         secret.encode("utf-8"),
         f"{payment_id}|{subscription_id}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(generated, signature)
+
+
+def verify_webhook_signature(secret: str, body: bytes, signature: str) -> bool:
+    if not secret or not signature:
+        return False
+    generated = hmac.new(
+        secret.encode("utf-8"),
+        body,
         hashlib.sha256,
     ).hexdigest()
     return hmac.compare_digest(generated, signature)

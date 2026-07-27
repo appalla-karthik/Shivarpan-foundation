@@ -59,8 +59,6 @@ TINYMCE_API_KEY = os.environ.get("TINYMCE_API_KEY", "")
 production_hosts = [
     "shivarpanfoundation.org",
     "www.shivarpanfoundation.org",
-    "shivarpan-foundation.onrender.com",
-    "shivarpan-foundation-backend.onrender.com",
 ]
 
 ALLOWED_HOSTS_ENV = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
@@ -281,6 +279,17 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend"
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "analytics": "120/hour",
+        "contact": "5/minute",
+        "newsletter": "5/minute",
+        "award_nomination": "3/hour",
+        "donation_checkout": "10/minute",
+        "donation_verify": "30/minute",
+    },
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny"
     ],
@@ -298,8 +307,6 @@ default_cors_origins = [
     "http://127.0.0.1:3000",
     "https://shivarpanfoundation.org",
     "https://www.shivarpanfoundation.org",
-    "https://shivarpan-foundation.onrender.com",
-    "https://shivarpan-foundation-backend.onrender.com",
 ]
 
 CORS_ALLOWED_ORIGINS = env_list(
@@ -318,8 +325,6 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 default_csrf_origins = [
     "https://shivarpanfoundation.org",
     "https://www.shivarpanfoundation.org",
-    "https://shivarpan-foundation.onrender.com",
-    "https://shivarpan-foundation-backend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = unique_list(
@@ -333,6 +338,8 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31_536_000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
@@ -343,3 +350,6 @@ RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
 RAZORPAY_DONATION_BRAND = os.environ.get("RAZORPAY_DONATION_BRAND", "Shivarpan Foundation")
+RAZORPAY_MAX_DONATION_AMOUNT = int(
+    os.environ.get("RAZORPAY_MAX_DONATION_AMOUNT", "500000")
+)

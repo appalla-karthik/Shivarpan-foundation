@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from django.contrib.admin.sites import AdminSite
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import BigIntegerField, Count, F, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from foundation.models import (
     Article,
     ContactSubmission,
     Donation,
+    DonationTransaction,
     Page,
     PageView,
+    Project,
     SiteSettings,
     Visitor,
 )
@@ -30,39 +33,71 @@ class FoundationAdminSite(AdminSite):
 
         extra_context["kpi_visitors_total"] = Visitor.objects.count()
         extra_context["kpi_pageviews_total"] = PageView.objects.count()
-        extra_context["kpi_pages_total"] = Page.objects.count()
-        extra_context["kpi_articles_total"] = Article.objects.count()
-        paid_statuses = [
-            Donation.Status.PAID,
-            Donation.Status.SUBSCRIPTION_AUTHORIZED,
-        ]
-        paid_donations = Donation.objects.filter(status__in=paid_statuses)
-
-        total_donations = paid_donations.aggregate(
-            total=Sum("amount"),
-            donors=Count("id"),
+        extra_context["kpi_pages_total"] = Page.objects.published().count()
+        extra_context["kpi_articles_total"] = Article.objects.published().count()
+        total_donations = DonationTransaction.objects.aggregate(
+            total_paise=Coalesce(
+                Sum(F("amount_paise") - F("refunded_amount_paise")),
+                Value(0),
+                output_field=BigIntegerField(),
+            ),
+            payments=Count("id"),
+            donors=Count("donation__donor_email", distinct=True),
         )
 
         campaign_rows = list(
-            paid_donations.filter(project_slug__gt="")
-            .values("project_slug")
-            .annotate(
-                project_title=Max("project_title"),
-                raised=Sum("amount"),
-                donors=Count("id"),
-                one_time_raised=Sum(
-                    "amount",
-                    filter=Q(donation_type=Donation.DonationType.ONE_TIME),
+            Project.objects.annotate(
+                raised_paise=Coalesce(
+                    Sum(
+                        F("transactions__amount_paise")
+                        - F("transactions__refunded_amount_paise")
+                    ),
+                    Value(0),
+                    output_field=BigIntegerField(),
                 ),
-                monthly_raised=Sum(
-                    "amount",
-                    filter=Q(donation_type=Donation.DonationType.MONTHLY),
+                donors=Count("transactions__donation", distinct=True),
+                one_time_raised_paise=Coalesce(
+                    Sum(
+                        F("transactions__amount_paise")
+                        - F("transactions__refunded_amount_paise"),
+                        filter=Q(
+                            transactions__donation__donation_type=Donation.DonationType.ONE_TIME
+                        ),
+                    ),
+                    Value(0),
+                    output_field=BigIntegerField(),
+                ),
+                monthly_raised_paise=Coalesce(
+                    Sum(
+                        F("transactions__amount_paise")
+                        - F("transactions__refunded_amount_paise"),
+                        filter=Q(
+                            transactions__donation__donation_type=Donation.DonationType.MONTHLY
+                        ),
+                    ),
+                    Value(0),
+                    output_field=BigIntegerField(),
                 ),
             )
-            .order_by("-raised", "project_title")[:8]
+            .filter(raised_paise__gt=0)
+            .annotate(
+                project_title=F("title"),
+                project_slug=F("slug"),
+            )
+            .values(
+                "project_title",
+                "project_slug",
+                "raised_paise",
+                "donors",
+                "one_time_raised_paise",
+                "monthly_raised_paise",
+            )
+            .order_by("-raised_paise", "project_title")
         )
 
-        total_campaign_raised = sum(row["raised"] or 0 for row in campaign_rows)
+        total_campaign_raised = sum(
+            (row["raised_paise"] or 0) / 100 for row in campaign_rows
+        )
 
         pie_colors = [
             "#1f5f7a",
@@ -79,7 +114,7 @@ class FoundationAdminSite(AdminSite):
         campaign_breakdown = []
 
         for index, row in enumerate(campaign_rows):
-            raised = row["raised"] or 0
+            raised = (row["raised_paise"] or 0) / 100
             percent = (
                 round((raised / total_campaign_raised) * 100, 1)
                 if total_campaign_raised
@@ -91,8 +126,8 @@ class FoundationAdminSite(AdminSite):
                     **row,
                     "raised": raised,
                     "donors": row["donors"] or 0,
-                    "one_time_raised": row["one_time_raised"] or 0,
-                    "monthly_raised": row["monthly_raised"] or 0,
+                    "one_time_raised": (row["one_time_raised_paise"] or 0) / 100,
+                    "monthly_raised": (row["monthly_raised_paise"] or 0) / 100,
                     "percent": percent,
                     "offset": running_percent,
                     "color": pie_colors[index % len(pie_colors)],
@@ -100,8 +135,11 @@ class FoundationAdminSite(AdminSite):
             )
             running_percent += percent
 
-        extra_context["kpi_donations_total"] = total_donations["total"] or 0
+        extra_context["kpi_donations_total"] = (
+            total_donations["total_paise"] or 0
+        ) / 100
         extra_context["kpi_donors_total"] = total_donations["donors"] or 0
+        extra_context["kpi_payments_total"] = total_donations["payments"] or 0
         extra_context["campaign_breakdown"] = campaign_breakdown
         extra_context["campaign_total_raised"] = total_campaign_raised
         extra_context["recent_donations"] = Donation.objects.order_by("-created_at")[:10]

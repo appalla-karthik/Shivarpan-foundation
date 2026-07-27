@@ -1,19 +1,22 @@
 from __future__ import annotations
+import json
+import mimetypes
 import re
 import uuid
 
 from foundation.models import GalleryItem
 from django.conf import settings
-from django.db import IntegrityError
+from django.core.files.images import get_image_dimensions
+from django.db import IntegrityError, transaction
 from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import BigIntegerField, Count, F, Max, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from rest_framework import generics, parsers, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 from .serializers import StoryItemSerializer
 from .models import StoryItem 
 from .razorpay_client import (
@@ -22,6 +25,7 @@ from .razorpay_client import (
     RazorpayError,
     verify_payment_signature,
     verify_subscription_signature,
+    verify_webhook_signature,
 )
 
 from foundation.models import (
@@ -31,6 +35,7 @@ from foundation.models import (
     ContactSubmission,
     Donation,
     DonationPaymentLog,
+    DonationTransaction,
     Homepage,
     HomepageSection,
     MagazineIssue,
@@ -46,6 +51,8 @@ from foundation.models import (
     TeamMember,
     Testimonial,
     UpcomingEvent,
+    PageView,
+    Visitor,
 )
 
 
@@ -64,6 +71,13 @@ def notify_admin(subject: str, lines: list[str], reply_to: str = "", attachments
         message.send(fail_silently=True)
     except Exception:
         pass
+
+
+def mask_pan(value: str) -> str:
+    normalized = (value or "").strip().upper()
+    if len(normalized) < 4:
+        return "-"
+    return f"******{normalized[-4:]}"
 
 
 class MediaAssetSerializer(serializers.ModelSerializer):
@@ -160,6 +174,9 @@ class ArticleSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     featured_image = MediaAssetSerializer(read_only=True)
     og_image = MediaAssetSerializer(read_only=True)
+    actual_online_raised_amount = serializers.IntegerField(read_only=True)
+    public_raised_amount = serializers.IntegerField(read_only=True)
+    funding_remaining_amount = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Project
@@ -170,6 +187,10 @@ class ProjectSerializer(serializers.ModelSerializer):
             "summary",
             "description",
             "partner_organization",
+            "funding_target_amount",
+            "actual_online_raised_amount",
+            "public_raised_amount",
+            "funding_remaining_amount",
             "impact_numbers",
             "publish_at",
             "featured_image",
@@ -395,12 +416,17 @@ class MediaAssetFileAPIView(generics.GenericAPIView):
             raise Http404("Media asset not found.")
 
         if asset.file_blob:
+            guessed_content_type = mimetypes.guess_type(asset.file_name or "")[0]
+            content_type = guessed_content_type or "application/octet-stream"
             response = HttpResponse(
                 asset.file_blob,
-                content_type=asset.content_type or "application/octet-stream",
+                content_type=content_type,
             )
             filename = asset.file_name or f"media-{asset.pk}"
             response["Content-Disposition"] = f'inline; filename="{filename}"'
+            response["Content-Security-Policy"] = (
+                "sandbox; default-src 'none'; style-src 'unsafe-inline'"
+            )
             return response
 
         if asset.file:
@@ -432,7 +458,7 @@ class UpcomingEventViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="active")
     def active(self, request):
-        event = self.get_queryset().filter(is_active=True, sort_order=0).first()
+        event = self.get_queryset().filter(is_active=True).first()
         if not event:
             return Response({})
         return Response(self.get_serializer(event).data)
@@ -457,7 +483,20 @@ class ArticleViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class ProjectViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Project.objects.all().order_by("-publish_at")
+    queryset = (
+        Project.objects.annotate(
+            actual_online_paise=Coalesce(
+                Sum(
+                    F("transactions__amount_paise")
+                    - F("transactions__refunded_amount_paise")
+                ),
+                Value(0),
+                output_field=BigIntegerField(),
+            )
+        )
+        .select_related("featured_image", "og_image")
+        .order_by("-publish_at")
+    )
     serializer_class = ProjectSerializer
     filterset_fields = ["slug"]
 
@@ -525,13 +564,72 @@ class HomepageAPIView(generics.GenericAPIView):
 
 
 class ContactSubmissionSerializer(serializers.ModelSerializer):
+    message = serializers.CharField(max_length=5000)
+
     class Meta:
         model = ContactSubmission
         fields = ["name", "email", "phone", "company", "subject", "message"]
 
 
+class PageViewCreateSerializer(serializers.Serializer):
+    path = serializers.CharField(max_length=255)
+    full_path = serializers.CharField(
+        max_length=1024,
+        required=False,
+        allow_blank=True,
+    )
+
+    def validate_path(self, value):
+        value = value.strip()
+        if not value.startswith("/") or value.startswith("//"):
+            raise serializers.ValidationError("Enter a valid site path.")
+        return value
+
+
+class PageViewCreateAPIView(generics.GenericAPIView):
+    serializer_class = PageViewCreateSerializer
+    throttle_scope = "analytics"
+    COOKIE_NAME = "sf_vid"
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        raw_visitor_id = request.COOKIES.get(self.COOKIE_NAME, "")
+        try:
+            visitor_id = uuid.UUID(raw_visitor_id)
+        except (ValueError, TypeError, AttributeError):
+            visitor_id = uuid.uuid4()
+
+        now = timezone.now()
+        visitor, _ = Visitor.objects.get_or_create(
+            visitor_id=visitor_id,
+            defaults={"first_seen_at": now, "last_seen_at": now},
+        )
+        Visitor.objects.filter(pk=visitor.pk).update(last_seen_at=now)
+        PageView.objects.create(
+            visitor=visitor,
+            path=serializer.validated_data["path"],
+            full_path=serializer.validated_data.get("full_path", "")[:1024],
+            referer=(request.META.get("HTTP_REFERER") or "")[:1024],
+            user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:1024],
+        )
+
+        response = Response({"detail": "Page view recorded."}, status=201)
+        response.set_cookie(
+            self.COOKIE_NAME,
+            str(visitor_id),
+            max_age=60 * 60 * 24 * 365 * 2,
+            samesite="Lax",
+            secure=not settings.DEBUG,
+            httponly=True,
+        )
+        return response
+
+
 class ContactSubmissionCreateAPIView(generics.CreateAPIView):
     serializer_class = ContactSubmissionSerializer
+    throttle_scope = "contact"
 
     def perform_create(self, serializer):
         submission = serializer.save()
@@ -558,6 +656,7 @@ class SubscriberSerializer(serializers.ModelSerializer):
 
 class SubscriberCreateAPIView(generics.CreateAPIView):
     serializer_class = SubscriberSerializer
+    throttle_scope = "newsletter"
 
     def perform_create(self, serializer):
         try:
@@ -595,10 +694,45 @@ class AwardNominationSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    def validate_nominee_profile_photo(self, uploaded):
+        if not uploaded:
+            return uploaded
+
+        max_bytes = 5 * 1024 * 1024
+        if uploaded.size > max_bytes:
+            raise serializers.ValidationError(
+                "Profile photo must be 5 MB or smaller."
+            )
+
+        allowed_content_types = {"image/jpeg", "image/png", "image/webp"}
+        if getattr(uploaded, "content_type", "") not in allowed_content_types:
+            raise serializers.ValidationError(
+                "Upload a JPEG, PNG, or WebP image."
+            )
+
+        try:
+            width, height = get_image_dimensions(uploaded)
+            uploaded.seek(0)
+        except Exception as exc:
+            raise serializers.ValidationError(
+                "The uploaded file is not a valid image."
+            ) from exc
+
+        if not width or not height:
+            raise serializers.ValidationError(
+                "The uploaded file is not a valid image."
+            )
+        if width * height > 25_000_000:
+            raise serializers.ValidationError(
+                "Image dimensions are too large."
+            )
+        return uploaded
+
 
 class AwardNominationCreateAPIView(generics.CreateAPIView):
     serializer_class = AwardNominationSerializer
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
+    throttle_scope = "award_nomination"
 
     def perform_create(self, serializer):
         nomination = serializer.save()
@@ -623,7 +757,10 @@ class AwardNominationCreateAPIView(generics.CreateAPIView):
 
 class DonationCheckoutSerializer(serializers.Serializer):
     donation_type = serializers.ChoiceField(choices=Donation.DonationType.choices)
-    amount = serializers.IntegerField(min_value=100)
+    amount = serializers.IntegerField(
+        min_value=100,
+        max_value=settings.RAZORPAY_MAX_DONATION_AMOUNT,
+    )
     currency = serializers.CharField(default="INR")
     name = serializers.CharField(max_length=255)
     email = serializers.EmailField()
@@ -640,9 +777,19 @@ class DonationCheckoutSerializer(serializers.Serializer):
     )
     payment_mode = serializers.CharField(max_length=50, required=False, allow_blank=True)
     donation_category = serializers.CharField(max_length=80, required=False, allow_blank=True)
-    atg_requested = serializers.BooleanField(required=False, default=False)
+    eighty_g_requested = serializers.BooleanField(required=False)
+    atg_requested = serializers.BooleanField(
+        required=False,
+        write_only=True,
+        help_text="Deprecated compatibility alias for eighty_g_requested.",
+    )
     pan_number = serializers.CharField(max_length=10, required=False, allow_blank=True)
-    message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    message = serializers.CharField(
+        max_length=2000,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
 
     def validate_currency(self, value):
         if value.upper() != "INR":
@@ -650,12 +797,33 @@ class DonationCheckoutSerializer(serializers.Serializer):
         return value.upper()
 
     def validate(self, attrs):
+        legacy_80g_value = attrs.pop("atg_requested", False)
+        attrs["eighty_g_requested"] = attrs.get(
+            "eighty_g_requested",
+            legacy_80g_value,
+        )
         pan_number = (attrs.get("pan_number") or "").upper().strip()
         attrs["pan_number"] = pan_number
-        if attrs.get("atg_requested") and not pan_number:
-            raise serializers.ValidationError({"pan_number": "PAN card number is required for ATG donations."})
+        if attrs.get("eighty_g_requested") and not pan_number:
+            raise serializers.ValidationError(
+                {"pan_number": "PAN card number is required for an 80G certificate."}
+            )
         if pan_number and not re.fullmatch(r"[A-Z]{5}[0-9]{4}[A-Z]", pan_number):
             raise serializers.ValidationError({"pan_number": "Enter a valid PAN card number."})
+
+        project_slug = (attrs.get("project_slug") or "").strip()
+        if project_slug:
+            project = Project.objects.published().filter(slug=project_slug).first()
+            if not project:
+                raise serializers.ValidationError(
+                    {"project_slug": "This project is not available for donations."}
+                )
+            attrs["project"] = project
+            attrs["project_slug"] = project.slug
+            attrs["project_title"] = project.title
+        else:
+            attrs["project"] = None
+            attrs["project_title"] = ""
         return attrs
 
 
@@ -694,8 +862,54 @@ def create_donation_log(
     )
 
 
+def record_captured_transaction(
+    donation: Donation,
+    payment_id: str,
+    amount_paise: int,
+    *,
+    source: str,
+    payload: dict | None = None,
+) -> DonationTransaction:
+    if not payment_id:
+        raise ValidationError("Missing Razorpay payment id.")
+    if amount_paise <= 0:
+        raise ValidationError("Invalid captured payment amount.")
+
+    with transaction.atomic():
+        transaction_record, created = DonationTransaction.objects.get_or_create(
+            razorpay_payment_id=payment_id,
+            defaults={
+                "donation": donation,
+                "project": donation.project,
+                "amount_paise": amount_paise,
+                "currency": donation.currency,
+                "status": DonationTransaction.Status.CAPTURED,
+                "source": source,
+                "payload": payload or {},
+            },
+        )
+        if not created:
+            changed_fields = []
+            if transaction_record.donation_id != donation.id:
+                raise ValidationError(
+                    "This Razorpay payment is already linked to another donation."
+                )
+            if transaction_record.project_id != donation.project_id:
+                raise ValidationError(
+                    "This payment is already assigned to another project."
+                )
+            if not transaction_record.payload and payload:
+                transaction_record.payload = payload
+                changed_fields.append("payload")
+            if changed_fields:
+                changed_fields.append("updated_at")
+                transaction_record.save(update_fields=changed_fields)
+        return transaction_record
+
+
 class DonationCheckoutAPIView(generics.GenericAPIView):
     serializer_class = DonationCheckoutSerializer
+    throttle_scope = "donation_checkout"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -710,10 +924,11 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
             currency=data["currency"],
             donation_type=data["donation_type"],
             payment_mode_preference=data.get("payment_mode", ""),
+            project=data.get("project"),
             project_slug=data.get("project_slug", ""),
             project_title=data.get("project_title", ""),
             donation_category=data.get("donation_category", ""),
-            atg_requested=data.get("atg_requested", False),
+            eighty_g_requested=data.get("eighty_g_requested", False),
             pan_number=data.get("pan_number", ""),
             message=data.get("message") or "",
             receipt=f"don_{uuid.uuid4().hex[:18]}",
@@ -721,7 +936,7 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "source": "website",
                 "payment_mode": data.get("payment_mode", ""),
                 "donation_category": data.get("donation_category", ""),
-                "atg_requested": data.get("atg_requested", False),
+                "eighty_g_requested": data.get("eighty_g_requested", False),
                 "project_slug": data.get("project_slug", ""),
                 "project_title": data.get("project_title", ""),
             },
@@ -736,7 +951,7 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "donation_type": donation.donation_type,
                 "payment_mode_preference": donation.payment_mode_preference,
                 "donation_category": donation.donation_category,
-                "atg_requested": donation.atg_requested,
+                "eighty_g_requested": donation.eighty_g_requested,
                 "project_slug": donation.project_slug,
                 "project_title": donation.project_title,
             },
@@ -750,8 +965,8 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 f"Amount: Rs {donation.amount}",
                 f"Donation Type: {donation.donation_type}",
                 f"Category: {donation.donation_category or 'General'}",
-                f"ATG Requested: {'Yes' if donation.atg_requested else 'No'}",
-                f"PAN: {donation.pan_number if donation.atg_requested else '-'}",
+                f"80G Certificate Requested: {'Yes' if donation.eighty_g_requested else 'No'}",
+                f"PAN: {mask_pan(donation.pan_number) if donation.eighty_g_requested else '-'}",
                 "",
                 donation.message,
             ],
@@ -767,7 +982,7 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
                 "donor_email": donation.donor_email,
                 "donation_type": donation.donation_type,
                 "donation_category": donation.donation_category,
-                "atg_requested": str(donation.atg_requested),
+                "eighty_g_requested": str(donation.eighty_g_requested),
                 "project_slug": donation.project_slug,
                 "project_title": donation.project_title,
             }
@@ -902,6 +1117,7 @@ class DonationCheckoutAPIView(generics.GenericAPIView):
 
 class DonationVerifyAPIView(generics.GenericAPIView):
     serializer_class = DonationVerifySerializer
+    throttle_scope = "donation_verify"
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -930,9 +1146,12 @@ class DonationVerifyAPIView(generics.GenericAPIView):
         )
 
         if donation.donation_type == Donation.DonationType.ONE_TIME:
-            order_id = data.get("razorpay_order_id") or donation.razorpay_order_id
+            supplied_order_id = data.get("razorpay_order_id") or ""
+            order_id = donation.razorpay_order_id
             if not order_id:
                 raise ValidationError("Missing order id.")
+            if supplied_order_id and supplied_order_id != order_id:
+                raise ValidationError("Razorpay order does not match this donation.")
             is_valid = verify_payment_signature(
                 settings.RAZORPAY_KEY_SECRET,
                 order_id,
@@ -940,8 +1159,6 @@ class DonationVerifyAPIView(generics.GenericAPIView):
                 signature,
             )
             if not is_valid:
-                donation.status = Donation.Status.FAILED
-                donation.save(update_fields=["status", "updated_at"])
                 create_donation_log(
                     donation,
                     DonationPaymentLog.EventType.FAILED,
@@ -951,11 +1168,18 @@ class DonationVerifyAPIView(generics.GenericAPIView):
                 raise ValidationError("Payment signature verification failed.")
 
             donation.razorpay_order_id = order_id
-            donation.status = Donation.Status.PAID
         else:
-            subscription_id = data.get("razorpay_subscription_id") or donation.razorpay_subscription_id
+            supplied_subscription_id = data.get("razorpay_subscription_id") or ""
+            subscription_id = donation.razorpay_subscription_id
             if not subscription_id:
                 raise ValidationError("Missing subscription id.")
+            if (
+                supplied_subscription_id
+                and supplied_subscription_id != subscription_id
+            ):
+                raise ValidationError(
+                    "Razorpay subscription does not match this donation."
+                )
             is_valid = verify_subscription_signature(
                 settings.RAZORPAY_KEY_SECRET,
                 payment_id,
@@ -963,8 +1187,6 @@ class DonationVerifyAPIView(generics.GenericAPIView):
                 signature,
             )
             if not is_valid:
-                donation.status = Donation.Status.FAILED
-                donation.save(update_fields=["status", "updated_at"])
                 create_donation_log(
                     donation,
                     DonationPaymentLog.EventType.FAILED,
@@ -976,20 +1198,92 @@ class DonationVerifyAPIView(generics.GenericAPIView):
             donation.razorpay_subscription_id = subscription_id
             donation.status = Donation.Status.SUBSCRIPTION_AUTHORIZED
 
+        try:
+            payment = get_razorpay_client().fetch_payment(payment_id)
+        except RazorpayError as exc:
+            # The checkout signature is valid, but a temporary API failure is not
+            # proof that money was captured. Preserve the verification details and
+            # let the signed webhook finish the accounting safely.
+            donation.razorpay_payment_id = payment_id
+            donation.razorpay_signature = signature
+            donation.razorpay_status = "verification_pending"
+            donation.verified_at = timezone.now()
+            donation.save(
+                update_fields=[
+                    "razorpay_order_id",
+                    "razorpay_subscription_id",
+                    "razorpay_payment_id",
+                    "razorpay_signature",
+                    "razorpay_status",
+                    "verified_at",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            create_donation_log(
+                donation,
+                DonationPaymentLog.EventType.VERIFIED,
+                "Checkout signature verified; capture confirmation is pending.",
+                {"razorpay_payment_id": payment_id, "error": str(exc)},
+            )
+            return Response(
+                {
+                    "detail": "Payment received; capture confirmation is pending.",
+                    "status": donation.status,
+                    "donation_id": donation.id,
+                },
+                status=202,
+            )
+
+        expected_amount_paise = int(donation.amount * 100)
+        if int(payment.get("amount") or 0) != expected_amount_paise:
+            raise ValidationError("Razorpay payment amount does not match this donation.")
+        if payment.get("currency") != donation.currency:
+            raise ValidationError("Razorpay payment currency does not match this donation.")
+        if (
+            donation.donation_type == Donation.DonationType.ONE_TIME
+            and payment.get("order_id") != donation.razorpay_order_id
+        ):
+            raise ValidationError("Razorpay payment order does not match this donation.")
+        if (
+            donation.donation_type == Donation.DonationType.MONTHLY
+            and payment.get("subscription_id") != donation.razorpay_subscription_id
+        ):
+            raise ValidationError("Razorpay payment subscription does not match this donation.")
+
+        is_captured = (
+            payment.get("status") == "captured" or payment.get("captured") is True
+        )
         donation.razorpay_payment_id = payment_id
         donation.razorpay_signature = signature
+        donation.razorpay_status = payment.get("status", "")
         donation.verified_at = timezone.now()
-        donation.save(
-            update_fields=[
-                "razorpay_order_id",
-                "razorpay_subscription_id",
-                "razorpay_payment_id",
-                "razorpay_signature",
-                "verified_at",
-                "status",
-                "updated_at",
-            ]
-        )
+        if (
+            donation.donation_type == Donation.DonationType.ONE_TIME
+            and is_captured
+        ):
+            donation.status = Donation.Status.PAID
+        with transaction.atomic():
+            donation.save(
+                update_fields=[
+                    "razorpay_order_id",
+                    "razorpay_subscription_id",
+                    "razorpay_payment_id",
+                    "razorpay_signature",
+                    "razorpay_status",
+                    "verified_at",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            if is_captured:
+                record_captured_transaction(
+                    donation,
+                    payment_id,
+                    expected_amount_paise,
+                    source="checkout_verify",
+                    payload=payment,
+                )
         create_donation_log(
             donation,
             DonationPaymentLog.EventType.VERIFIED,
@@ -1003,63 +1297,178 @@ class DonationVerifyAPIView(generics.GenericAPIView):
         )
         return Response(
             {
-                "detail": "Payment verified successfully.",
+                "detail": (
+                    "Payment verified successfully."
+                    if is_captured
+                    else "Payment verified; capture confirmation is pending."
+                ),
                 "status": donation.status,
                 "donation_id": donation.id,
-            }
+            },
+            status=200 if is_captured else 202,
         )
+
+
+class DonationWebhookAPIView(generics.GenericAPIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        raw_body = request.body
+        signature = request.headers.get("X-Razorpay-Signature", "")
+        if not verify_webhook_signature(
+            settings.RAZORPAY_WEBHOOK_SECRET,
+            raw_body,
+            signature,
+        ):
+            return Response({"detail": "Invalid webhook signature."}, status=400)
+
+        try:
+            event_payload = json.loads(raw_body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return Response({"detail": "Invalid webhook payload."}, status=400)
+
+        event_name = event_payload.get("event", "")
+        payment = (
+            event_payload.get("payload", {})
+            .get("payment", {})
+            .get("entity", {})
+        )
+        payment_id = payment.get("id", "")
+
+        if event_name in {"payment.captured", "subscription.charged"}:
+            notes = payment.get("notes") or {}
+            donation = None
+            donation_id = notes.get("donation_id")
+            if str(donation_id).isdigit():
+                donation = Donation.objects.filter(pk=int(donation_id)).first()
+            if not donation and payment.get("subscription_id"):
+                donation = Donation.objects.filter(
+                    razorpay_subscription_id=payment["subscription_id"]
+                ).first()
+            if not donation and payment.get("order_id"):
+                donation = Donation.objects.filter(
+                    razorpay_order_id=payment["order_id"]
+                ).first()
+
+            if not donation:
+                # A non-2xx response asks Razorpay to retry rather than silently
+                # discarding a valid event that arrived before local mapping.
+                return Response(
+                    {"detail": "Donation mapping not found; retry required."},
+                    status=503,
+                )
+
+            amount_paise = int(payment.get("amount") or donation.amount * 100)
+            if amount_paise <= 0:
+                return Response({"detail": "Invalid payment amount."}, status=400)
+            if (payment.get("currency") or donation.currency) != donation.currency:
+                return Response({"detail": "Payment currency mismatch."}, status=400)
+            record_captured_transaction(
+                donation,
+                payment_id,
+                amount_paise,
+                source="razorpay_webhook",
+                payload=payment,
+            )
+            if donation.donation_type == Donation.DonationType.ONE_TIME:
+                donation.status = Donation.Status.PAID
+            else:
+                donation.status = Donation.Status.SUBSCRIPTION_AUTHORIZED
+            donation.razorpay_payment_id = payment_id or donation.razorpay_payment_id
+            donation.razorpay_status = payment.get("status", "captured")
+            donation.verified_at = donation.verified_at or timezone.now()
+            donation.save(
+                update_fields=[
+                    "status",
+                    "razorpay_payment_id",
+                    "razorpay_status",
+                    "verified_at",
+                    "updated_at",
+                ]
+            )
+            return Response({"detail": "Payment recorded."})
+
+        if event_name == "payment.refunded" and payment_id:
+            transaction_record = DonationTransaction.objects.filter(
+                razorpay_payment_id=payment_id
+            ).first()
+            if not transaction_record:
+                return Response(
+                    {"detail": "Payment transaction not found; retry required."},
+                    status=503,
+                )
+            refunded_paise = min(
+                int(payment.get("amount_refunded") or transaction_record.amount_paise),
+                transaction_record.amount_paise,
+            )
+            transaction_record.refunded_amount_paise = refunded_paise
+            transaction_record.status = (
+                DonationTransaction.Status.REFUNDED
+                if refunded_paise >= transaction_record.amount_paise
+                else DonationTransaction.Status.PARTIALLY_REFUNDED
+            )
+            transaction_record.payload = payment
+            transaction_record.save(
+                update_fields=[
+                    "refunded_amount_paise",
+                    "status",
+                    "payload",
+                    "updated_at",
+                ]
+            )
+            return Response({"detail": "Refund recorded."})
+
+        return Response({"detail": "Event ignored."})
+
+
 class DonationFundingSummaryAPIView(generics.GenericAPIView):
     authentication_classes = []
     permission_classes = []
 
     def get(self, request):
-        paid_statuses = [
-            Donation.Status.PAID,
-            Donation.Status.SUBSCRIPTION_AUTHORIZED,
-        ]
-
-        totals = (
-            Donation.objects.filter(
-                status__in=paid_statuses,
-                project_slug__gt="",
-            )
-            .values("project_slug")
+        project_rows = (
+            Project.objects.published()
             .annotate(
-                project_title=Max("project_title"),
-                raised=Sum("amount"),
-                donors=Count("id"),
-                one_time_raised=Sum(
-                    "amount",
-                    filter=Q(donation_type=Donation.DonationType.ONE_TIME),
+                actual_online_paise=Coalesce(
+                    Sum(
+                        F("transactions__amount_paise")
+                        - F("transactions__refunded_amount_paise")
+                    ),
+                    Value(0),
+                    output_field=BigIntegerField(),
                 ),
-                monthly_raised=Sum(
-                    "amount",
-                    filter=Q(donation_type=Donation.DonationType.MONTHLY),
-                ),
+                donors=Count("transactions__donation", distinct=True),
             )
-            .order_by("project_title", "project_slug")
+            .order_by("title", "slug")
         )
 
-        projects = [
-            {
-                "project_slug": row["project_slug"],
-                "project_title": row["project_title"] or row["project_slug"],
-                "raised": row["raised"] or 0,
-                "donors": row["donors"] or 0,
-                "one_time_raised": row["one_time_raised"] or 0,
-                "monthly_raised": row["monthly_raised"] or 0,
-            }
-            for row in totals
-        ]
+        projects = []
+        for project in project_rows:
+            projects.append(
+                {
+                    "project_slug": project.slug,
+                    "project_title": project.title,
+                    "target": project.funding_target_amount,
+                    "manual_raised": project.manual_raised_amount,
+                    "actual_online_raised": project.actual_online_raised_amount,
+                    "raised": project.public_raised_amount,
+                    "remaining": project.funding_remaining_amount,
+                    "donors": project.donors or 0,
+                }
+            )
 
         return Response(
             {
                 "projects": projects,
                 "total_raised": sum(project["raised"] for project in projects),
+                "total_actual_online_raised": sum(
+                    project["actual_online_raised"] for project in projects
+                ),
                 "total_donors": sum(project["donors"] for project in projects),
                 "updated_at": timezone.now().isoformat(),
             }
         )
-class StoryItemViewSet(ModelViewSet):
+class StoryItemViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = StoryItem.objects.filter(is_active=True).order_by("sort_order")
     serializer_class = StoryItemSerializer

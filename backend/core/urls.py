@@ -58,11 +58,11 @@ urlpatterns = [
     path("<slug:slug>/", page_detail, name="page-detail"),
 ]
 
-# Temporary Render-friendly media serving without a separate disk/storage layer.
-urlpatterns += [
-    re_path(
-        rf"^{settings.MEDIA_URL.lstrip('/')}(?P<path>.*)$",
-        serve,
-        {"document_root": settings.MEDIA_ROOT},
-    ),
-]
+if settings.DEBUG:
+    urlpatterns += [
+        re_path(
+            rf"^{settings.MEDIA_URL.lstrip('/')}(?P<path>.*)$",
+            serve,
+            {"document_root": settings.MEDIA_ROOT},
+        ),
+    ]

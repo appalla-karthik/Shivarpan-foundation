@@ -21,12 +21,12 @@
         </div>
 
         <p class="shiv-dashboard__stat-note">
-          {{ kpi_donors_total }} verified payments
+          {{ kpi_payments_total }} verified payments from {{ kpi_donors_total }} donors
         </p>
       </div>
 
       <div class="module shiv-dashboard__stat">
-        <h2>Campaign Raised</h2>
+        <h2>Actual Campaign Collection</h2>
 
         <div class="shiv-dashboard__stat-value">
           INR {{ campaign_total_raised }}
@@ -66,10 +66,10 @@
       <div class="module shiv-dashboard__panel shiv-dashboard__panel--wide">
         <div class="shiv-dashboard__panel-heading">
           <div>
-            <h2>Campaign Donation Analysis</h2>
+            <h2>Actual Online Campaign Collection</h2>
 
             <p>
-              Verified payments grouped by selected project/campaign.
+              Captured payments grouped by project, net of recorded refunds.
             </p>
           </div>
 
@@ -94,7 +94,7 @@
             <thead>
               <tr>
                 <th>Campaign</th>
-                <th>Raised</th>
+                <th>Actual Online</th>
                 <th>Donors</th>
                 <th>Share</th>
               </tr>

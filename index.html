@@ -4,11 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Security Headers -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -24,7 +20,6 @@
       >
     </noscript>
     
-    <!-- Content Security Policy -->
     <!-- Content Security Policy -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
@@ -59,7 +54,6 @@
     https://shivarpanfoundation.org
     https://www.shivarpanfoundation.org
     https://api.github.com
-    https://shivarpan-foundation-backend.onrender.com
     https://api.razorpay.com
     https://checkout.razorpay.com
     https://cdn.razorpay.com
@@ -72,12 +66,14 @@
 
   frame-src
     'self'
+    https://www.openstreetmap.org
     https://checkout.razorpay.com
     https://api.razorpay.com
     https://*.razorpay.com;
 
   child-src
     'self'
+    https://www.openstreetmap.org
     https://checkout.razorpay.com
     https://api.razorpay.com
     https://*.razorpay.com;

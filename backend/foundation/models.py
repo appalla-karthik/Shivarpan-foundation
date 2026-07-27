@@ -62,19 +62,16 @@ class MediaAsset(TimeStampedModel):
             name = self.file.name.lower()
             self.file_name = self.file.name.rsplit("/", 1)[-1]
 
-            uploaded_file = getattr(self.file, "file", None)
-            if uploaded_file and hasattr(uploaded_file, "read"):
-                try:
-                    uploaded_file.seek(0)
-                except Exception:
-                    pass
-                self.file_blob = uploaded_file.read()
-                try:
-                    uploaded_file.seek(0)
-                except Exception:
-                    pass
+            uploaded_file = None
+            if not getattr(self.file, "_committed", True):
+                # Uploaded media lives on the persistent media volume. Do not
+                # duplicate every new file inside the database as a binary blob.
+                self.file_blob = None
+                uploaded_file = getattr(self.file, "file", None)
 
-            self.content_type = getattr(self.file, "content_type", "") or self.content_type
+            self.content_type = (
+                getattr(uploaded_file, "content_type", "") or self.content_type
+            )
             if name.endswith((".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")):
                 self.media_type = self.MediaType.IMAGE
             elif name.endswith((".mp4", ".mov", ".webm", ".mkv")):
@@ -98,8 +95,9 @@ class MediaAsset(TimeStampedModel):
         else:
             return ""
 
-        if request:
-            return request.build_absolute_uri(relative)
+        # Keep public media same-origin. Absolute URLs generated behind a reverse
+        # proxy can accidentally use http:// when proxy headers are incomplete,
+        # which causes mixed-content failures on the HTTPS frontend.
         return relative
 
 
@@ -257,6 +255,15 @@ class Project(PublishableModel, SeoFields):
     summary = models.TextField(blank=True)
     description = models.TextField(blank=True)
     partner_organization = models.CharField(max_length=255, blank=True)
+    funding_target_amount = models.PositiveBigIntegerField(
+        default=0,
+        help_text="Public fundraising target in rupees.",
+    )
+    manual_raised_amount = models.PositiveBigIntegerField(
+        default=0,
+        editable=False,
+        help_text="Internal opening/offline balance in rupees. Use the admin funding control to update it.",
+    )
     impact_numbers = models.JSONField(default=dict, blank=True)
     featured_image = models.ForeignKey(
         MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="project_images"
@@ -270,6 +277,25 @@ class Project(PublishableModel, SeoFields):
         if self.impact_numbers is None:
             self.impact_numbers = {}
         super().save(*args, **kwargs)
+
+    @property
+    def actual_online_raised_amount(self) -> int:
+        annotated_total = getattr(self, "actual_online_paise", None)
+        if annotated_total is None:
+            annotated_total = self.transactions.aggregate(
+                total=models.Sum(
+                    models.F("amount_paise") - models.F("refunded_amount_paise")
+                )
+            )["total"]
+        return max(int(annotated_total or 0) // 100, 0)
+
+    @property
+    def public_raised_amount(self) -> int:
+        return int(self.manual_raised_amount or 0) + self.actual_online_raised_amount
+
+    @property
+    def funding_remaining_amount(self) -> int:
+        return max(int(self.funding_target_amount or 0) - self.public_raised_amount, 0)
 
     def __str__(self) -> str:
         return self.title
@@ -328,10 +354,20 @@ class Donation(TimeStampedModel):
         default=DonationType.ONE_TIME,
     )
     payment_mode_preference = models.CharField(max_length=50, blank=True)
+    project = models.ForeignKey(
+        Project,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="donations",
+    )
     project_slug = models.SlugField(max_length=255, blank=True)
     project_title = models.CharField(max_length=255, blank=True)
     donation_category = models.CharField(max_length=80, blank=True)
-    atg_requested = models.BooleanField(default=False)
+    eighty_g_requested = models.BooleanField(
+        default=False,
+        verbose_name="80G certificate requested",
+    )
     pan_number = models.CharField(max_length=10, blank=True)
     message = models.TextField(blank=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.CREATED)
@@ -392,6 +428,48 @@ class DonationPaymentLog(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.donation_id} - {self.event_type}"
+
+
+class DonationTransaction(TimeStampedModel):
+    class Status(models.TextChoices):
+        CAPTURED = "captured", "Captured"
+        PARTIALLY_REFUNDED = "partially_refunded", "Partially Refunded"
+        REFUNDED = "refunded", "Refunded"
+
+    donation = models.ForeignKey(
+        Donation,
+        on_delete=models.CASCADE,
+        related_name="transactions",
+    )
+    project = models.ForeignKey(
+        Project,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+    )
+    razorpay_payment_id = models.CharField(max_length=80, unique=True)
+    amount_paise = models.PositiveBigIntegerField()
+    refunded_amount_paise = models.PositiveBigIntegerField(default=0)
+    currency = models.CharField(max_length=8, default="INR")
+    status = models.CharField(
+        max_length=24,
+        choices=Status.choices,
+        default=Status.CAPTURED,
+    )
+    source = models.CharField(max_length=32, blank=True)
+    paid_at = models.DateTimeField(default=timezone.now)
+    payload = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-paid_at", "-id"]
+
+    @property
+    def net_amount_paise(self) -> int:
+        return max(int(self.amount_paise) - int(self.refunded_amount_paise), 0)
+
+    def __str__(self) -> str:
+        return f"{self.razorpay_payment_id} - Rs {self.net_amount_paise / 100:g}"
 
 
 class Homepage(TimeStampedModel):

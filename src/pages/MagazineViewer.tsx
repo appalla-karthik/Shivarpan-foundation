@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { getJson } from "@/lib/api";
+import { assetUrl, getJson } from "@/lib/api";
+import { sanitizeCmsHtml } from "@/lib/sanitizeHtml";
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
 import {
@@ -189,19 +190,19 @@ const MagazineViewer = () => {
 
   const pdfUrl =
     story?.featured_image?.media_type === "pdf"
-      ? story.featured_image.url
+      ? assetUrl(story.featured_image.url)
       : story?.issue?.cover_image?.media_type === "pdf"
-        ? story.issue.cover_image.url
+        ? assetUrl(story.issue.cover_image.url)
         : null;
   const coverImage = useMemo(() => {
     if (!story) {
       return "";
     }
     if (story.issue?.cover_image?.media_type === "image" && story.issue.cover_image.url) {
-      return story.issue.cover_image.url;
+      return assetUrl(story.issue.cover_image.url);
     }
     if (story.featured_image?.media_type === "image") {
-      return story.featured_image.url;
+      return assetUrl(story.featured_image.url);
     }
     return "";
   }, [story]);
@@ -744,7 +745,7 @@ const MagazineViewer = () => {
                 ) : null}
                 <div className="dynamic-content mt-6 space-y-4 text-sm leading-relaxed text-slate-700 sm:text-base">
                   {story.body ? (
-                    <div dangerouslySetInnerHTML={{ __html: story.body }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(story.body) }} />
                   ) : (
                     <p>This story is being prepared for reading.</p>
                   )}

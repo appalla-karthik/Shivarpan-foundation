@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageHero from "@/components/PageHero";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
-import { getJson } from "@/lib/api";
+import { assetUrl, getJson } from "@/lib/api";
 
 type MediaAsset = {
   id: number;
@@ -54,7 +54,7 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
   }, []);
 
   const featuredEvent = events[0];
-  const pageHeroImage = heroImage || featuredEvent?.poster_image?.url || "/placeholder.svg";
+  const pageHeroImage = assetUrl(heroImage || featuredEvent?.poster_image?.url) || "/placeholder.svg";
   const openPreview = (event: UpcomingEventPayload) => {
     setPreviewEvent(event);
     setIsPreviewOpen(true);
@@ -90,7 +90,7 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
           {events.length > 0 ? (
             <AnimatedSection className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 xl:grid-cols-3">
               {events.map((event, index) => {
-                const posterUrl = event.poster_image?.url || "/placeholder.svg";
+                const posterUrl = assetUrl(event.poster_image?.url) || "/placeholder.svg";
 
                 return (
                   <motion.article
@@ -187,21 +187,24 @@ const UpcomingEvents = ({ heroTitle, heroSubtitle, heroImage }: UpcomingEventsPr
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.96, opacity: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-3xl border border-primary/30 bg-background shadow-[0_40px_120px_-60px_hsl(var(--foreground))]"
+              className="relative inline-flex max-h-[90vh] max-w-[94vw] rounded-3xl border border-white/20 bg-white/10 p-3 shadow-[0_40px_120px_-60px_hsl(var(--foreground))] backdrop-blur-md"
               onClick={(modalEvent) => modalEvent.stopPropagation()}
             >
               <button
                 onClick={() => setIsPreviewOpen(false)}
-                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
+                className="absolute right-6 top-6 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/35 bg-black/65 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/85"
                 aria-label="Close preview"
               >
                 <X className="h-4 w-4" />
               </button>
-              <img
-                src={previewEvent.poster_image?.url || "/placeholder.svg"}
-                alt={`${previewEvent.title} poster full size`}
-                className="h-full w-full object-contain"
-              />
+              <div className="inline-flex max-h-[calc(90vh-1.5rem)] max-w-[calc(94vw-1.5rem)] items-center justify-center overflow-hidden rounded-[1.2rem] bg-black/25">
+                <img
+                  src={assetUrl(previewEvent.poster_image?.url) || "/placeholder.svg"}
+                  alt={`${previewEvent.title} poster full size`}
+                  decoding="async"
+                  className="block h-auto max-h-[calc(90vh-1.5rem)] w-auto max-w-[calc(94vw-1.5rem)] object-contain"
+                />
+              </div>
             </motion.div>
           </motion.div>
         ) : null}

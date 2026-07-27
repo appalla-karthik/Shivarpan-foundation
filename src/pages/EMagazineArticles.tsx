@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { getJson, reportApiError } from "@/lib/api";
+import { assetUrl, getJson, reportApiError } from "@/lib/api";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -74,8 +74,8 @@ const EMagazineArticles = () => {
     () =>
       stories.map((story) => {
         const coverImage =
-          (story.featured_image?.media_type === "image" && story.featured_image.url) ||
-          (story.issue?.cover_image?.media_type === "image" && story.issue.cover_image.url) ||
+          (story.featured_image?.media_type === "image" && assetUrl(story.featured_image.url)) ||
+          (story.issue?.cover_image?.media_type === "image" && assetUrl(story.issue.cover_image.url)) ||
           "";
         const description =
           story.excerpt ||

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getJson, postJson, reportApiError } from "@/lib/api";
 
 const presetAmounts = [500, 1000, 2500, 5000];
+const maximumDonationAmount = 500_000;
 const donationModes = ["one_time", "monthly"] as const;
 const donationCategories = ["General Support", "Healthcare", "Education", "Food Support", "Environment", "Elderly Support", "Disability Assistance"] as const;
 
@@ -76,7 +77,7 @@ const DonateNow = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [isAtgRequested, setIsAtgRequested] = useState(false);
+  const [is80GRequested, setIs80GRequested] = useState(false);
   const [panNumber, setPanNumber] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,7 +129,7 @@ const DonateNow = () => {
     setName("");
     setEmail("");
     setPhone("");
-    setIsAtgRequested(false);
+    setIs80GRequested(false);
     setPanNumber("");
     setMessage("");
     setDonationMode("one_time");
@@ -145,12 +146,20 @@ const DonateNow = () => {
       });
       return;
     }
+    if (finalAmount > maximumDonationAmount) {
+      toast({
+        title: "Amount is too high for online checkout",
+        description: "For donations above Rs 5,00,000, please contact the foundation.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const normalizedPan = panNumber.trim().toUpperCase();
-    if (isAtgRequested && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(normalizedPan)) {
+    if (is80GRequested && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(normalizedPan)) {
       toast({
         title: "PAN required",
-        description: "Enter a valid PAN card number to continue with ATG.",
+        description: "Enter a valid PAN card number to continue with an 80G certificate request.",
         variant: "destructive",
       });
       return;
@@ -170,9 +179,11 @@ const DonateNow = () => {
         name,
         email,
         phone,
+        project_slug: selectedProject?.slug ?? "",
+        project_title: selectedProject?.title ?? "",
         donation_category: donationCategory,
-        atg_requested: isAtgRequested,
-        pan_number: isAtgRequested ? normalizedPan : "",
+        eighty_g_requested: is80GRequested,
+        pan_number: is80GRequested ? normalizedPan : "",
         message: donationMessage,
       });
 
@@ -189,7 +200,9 @@ const DonateNow = () => {
           donation_id: checkout.donation_id,
           donation_mode: donationMode,
           donation_category: donationCategory,
-          atg_requested: isAtgRequested ? "yes" : "no",
+          project_slug: selectedProject?.slug ?? "",
+          project_title: selectedProject?.title ?? "",
+          eighty_g_requested: is80GRequested ? "yes" : "no",
         },
         recurring: donationMode === "monthly" ? 1 : undefined,
         handler: async (response: RazorpaySuccessResponse) => {
@@ -420,6 +433,7 @@ const DonateNow = () => {
                   <Input
                     type="number"
                     min={100}
+                    max={maximumDonationAmount}
                     step={100}
                     value={customAmount}
                     onChange={(event) => setCustomAmount(event.target.value)}
@@ -480,27 +494,27 @@ const DonateNow = () => {
                 <div className="mt-4 rounded-[1.6rem] border border-border/80 bg-background/55 p-4">
                   <button
                     type="button"
-                    onClick={() => setIsAtgRequested((current) => !current)}
+                    onClick={() => setIs80GRequested((current) => !current)}
                     className={`flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition-all ${
-                      isAtgRequested
+                      is80GRequested
                         ? "border-primary bg-primary/10 shadow-[0_14px_36px_-30px_hsl(var(--primary))]"
                         : "border-border bg-card hover:border-primary/40"
                     }`}
                   >
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">ATG</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">80G Certificate</p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        A PAN card number is required for an ATG receipt/certificate.
+                        Request an 80G donation certificate for income-tax deduction. A valid PAN number is required.
                       </p>
                     </div>
                     <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
-                      isAtgRequested ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
+                      is80GRequested ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
                     }`}>
                       <CheckCircle2 className="h-4 w-4" />
                     </span>
                   </button>
 
-                  {isAtgRequested ? (
+                  {is80GRequested ? (
                     <div className="mt-3">
                       <Input
                         required
@@ -521,9 +535,9 @@ const DonateNow = () => {
                       <p className={`mt-2 text-xs font-medium ${isPanValid ? "text-emerald-600" : "text-destructive"}`}>
                         {panNumber
                           ? isPanValid
-                            ? "PAN verified."
+                            ? "PAN format is valid."
                             : "Invalid PAN format. Example: ABCDE1234F"
-                          : "PAN is required for ATG."}
+                          : "PAN is required for an 80G certificate."}
                       </p>
                     </div>
                   ) : null}
@@ -546,7 +560,7 @@ const DonateNow = () => {
                     {donationMode === "monthly" ? "Monthly donation" : "Total donation"}:{" "}
                     <span className="font-semibold text-foreground">Rs {finalAmount.toLocaleString("en-IN")}</span>
                   </p>
-                  <Button type="submit" disabled={isSubmitting || (isAtgRequested && !isPanValid)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button type="submit" disabled={isSubmitting || (is80GRequested && !isPanValid)} className="bg-accent text-accent-foreground hover:bg-accent/90">
                     {isSubmitting ? (
                       <>
                         <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

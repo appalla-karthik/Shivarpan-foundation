@@ -345,12 +345,21 @@ const Contact = () => {
                       <Mail className="h-4 w-4 text-primary" />
                       info@shivarpanfoundation.org
                     </p>
+                    <a
+                      href="https://maps.app.goo.gl/g4aeX4K7Bw7A7xtf6"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      Open in Maps
+                    </a>
                   </div>
                 </div>
                 <div className="xl:col-span-8">
                   <iframe
                     title="Shivarpan Foundation Location Map"
-                    src="https://www.openstreetmap.org/export/embed.html?bbox=72.5147%2C23.0031%2C72.5347%2C23.0231&layer=mapnik&marker=23.0131%2C72.5247"
+                    src="https://www.openstreetmap.org/export/embed.html?bbox=72.5128%2C23.0027%2C72.5328%2C23.0227&layer=mapnik&marker=23.0126699%2C72.5228407"
                     className="h-[340px] w-full md:h-[380px]"
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"

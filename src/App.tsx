@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { HashRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import FloatingWhatsAppButton from "./components/FloatingWhatsAppButton";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { postJson } from "./lib/api";
 
 const UpcomingEventPopup = lazy(() => import("./components/UpcomingEventPopup"));
 const Index = lazy(() => import("./pages/Index"));
@@ -35,6 +36,34 @@ const RouteFallback = () => (
 );
 
 const POPUP_MOUNT_DELAY_MS = 60000;
+const ROUTE_TITLES: Record<string, string> = {
+  "/": "Shivarpan Charitable Foundation",
+  "/about": "About Us | Shivarpan Foundation",
+  "/gallery": "Impact Gallery | Shivarpan Foundation",
+  "/news-stories": "Stories | Shivarpan Foundation",
+  "/recent-projects": "Recent Projects | Shivarpan Foundation",
+  "/awards": "Awards | Shivarpan Foundation",
+  "/podcast": "Podcast | Shivarpan Foundation",
+  "/contact": "Contact Us | Shivarpan Foundation",
+  "/donate-now": "Donate | Shivarpan Foundation",
+  "/upcoming-events": "Upcoming Events | Shivarpan Foundation",
+  "/e-magazine-articles": "Reports & Publications | Shivarpan Foundation",
+  "/board-of-trustees": "Board of Trustees | Shivarpan Foundation",
+  "/team-members": "Team Members | Shivarpan Foundation",
+  "/privacy-policy": "Privacy Policy | Shivarpan Foundation",
+  "/terms-and-conditions": "Terms and Conditions | Shivarpan Foundation",
+};
+
+const migrateLegacyHashRoute = () => {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#/")) {
+    return;
+  }
+
+  const legacyPath = window.location.hash.slice(1);
+  window.history.replaceState(null, "", legacyPath);
+};
+
+migrateLegacyHashRoute();
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -45,6 +74,27 @@ const AppRoutes = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
+
+  useEffect(() => {
+    document.title =
+      ROUTE_TITLES[location.pathname] || "Shivarpan Charitable Foundation";
+    const canonicalUrl = `${window.location.origin}${location.pathname}`;
+    document
+      .querySelector<HTMLLinkElement>('link[rel="canonical"]')
+      ?.setAttribute("href", canonicalUrl);
+    document
+      .querySelector<HTMLMetaElement>('meta[property="og:url"]')
+      ?.setAttribute("content", canonicalUrl);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    void postJson("analytics/page-view/", {
+      path: location.pathname,
+      full_path: `${location.pathname}${location.search}`,
+    }).catch(() => {
+      // Analytics must never interrupt page navigation.
+    });
+  }, [location.pathname, location.search]);
 
   return (
     <>
@@ -96,12 +146,7 @@ const App = () => {
     <ErrorBoundary>
       <TooltipProvider>
         <Toaster />
-        <HashRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
+        <BrowserRouter>
           {showPopup ? (
             <Suspense fallback={null}>
               <UpcomingEventPopup />
@@ -110,7 +155,7 @@ const App = () => {
           <Suspense fallback={<RouteFallback />}>
             <AppRoutes />
           </Suspense>
-        </HashRouter>
+        </BrowserRouter>
       </TooltipProvider>
     </ErrorBoundary>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { getJson } from "@/lib/api";
+import { assetUrl, getJson } from "@/lib/api";
 
 type UpcomingEventPopupProps = {
   enabled?: boolean;
@@ -85,7 +85,7 @@ const UpcomingEventPopup = ({ enabled = true }: UpcomingEventPopupProps) => {
                 <X className="h-4 w-4" />
               </button>
               <img
-                src={event.poster_image?.url}
+                src={assetUrl(event.poster_image?.url)}
                 alt="Upcoming event poster"
                 width={600}
                 height={600}

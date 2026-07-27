@@ -1,18 +1,15 @@
 type JsonRecord = Record<string, unknown>;
 const LOCAL_API_TIMEOUT_MS = 4500;
-const REMOTE_API_TIMEOUT_MS = 4500;
+const REMOTE_API_TIMEOUT_MS = 10000;
 
 // Cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_CACHE_TTL = 60 * 1000;
 
 // Security utilities
 const sanitizeInput = (input: string): string => {
   if (typeof input !== 'string') return '';
-  return input
-    .trim()
-    .replace(/[<>"'&]/g, '') // Remove potentially dangerous characters
-    .substring(0, 1000); // Limit length
+  return input.trim().substring(0, 2048);
 };
 
 const validatePath = (path: string): boolean => {
@@ -29,7 +26,7 @@ const validatePath = (path: string): boolean => {
 
   try {
     const url = new URL(path.replace(/^\/+/, ''), 'https://local.invalid/');
-    const validPathPattern = /^[a-zA-Z0-9\-_\/]*$/;
+    const validPathPattern = /^[a-zA-Z0-9_/-]*$/;
     const validQueryPattern = /^[a-zA-Z0-9\-_.:, ]*$/;
 
     if (!validPathPattern.test(url.pathname)) {
@@ -94,16 +91,11 @@ const deriveFallbackBaseUrl = () => {
 
   const { hostname, protocol } = window.location;
 
-  if (hostname === "shivarpan-foundation.onrender.com") {
-    return "https://shivarpan-foundation-backend.onrender.com/api";
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://127.0.0.1:8000/api";
   }
 
-  if (hostname.endsWith(".onrender.com") && !hostname.includes("-backend.")) {
-    const derivedHost = hostname.replace(".onrender.com", "-backend.onrender.com");
-    return `${protocol}//${derivedHost}/api`;
-  }
-
-    return import.meta.env.VITE_API_URL || "https://shivarpanfoundation.org/api";
+  return import.meta.env.VITE_API_URL || `${protocol}//${window.location.host}/api`;
 };
 
 const rawBaseUrl =
@@ -221,14 +213,6 @@ export async function postJson<TResponse = JsonRecord>(
     throw new Error('Invalid payload');
   }
 
-  // Sanitize payload values
-  const sanitizedPayload = JSON.parse(JSON.stringify(payload, (key, value) => {
-    if (typeof value === 'string') {
-      return sanitizeInput(value);
-    }
-    return value;
-  }));
-
   let response: Response;
   const { controller, timeoutId } = createTimeoutSignal();
   try {
@@ -238,20 +222,17 @@ export async function postJson<TResponse = JsonRecord>(
         "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest", // CSRF protection
       },
-      body: JSON.stringify(sanitizedPayload),
-      // Add security options
-      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+      credentials: 'include',
       mode: 'cors',
       cache: 'no-cache',
       signal: controller.signal,
     });
-  } catch (error) {
-    throw error;
   } finally {
     window.clearTimeout(timeoutId);
   }
 
-  let data: TResponse | JsonRecord | null = null;
+  let data: TResponse | JsonRecord | null;
   try {
     data = (await response.json()) as TResponse;
   } catch {
@@ -289,18 +270,16 @@ export async function getJson<TResponse = JsonRecord>(path: string, options?: { 
         "Accept": "application/json",
         "X-Requested-With": "XMLHttpRequest", // CSRF protection
       },
-      credentials: 'same-origin',
+      credentials: 'include',
       mode: 'cors',
       cache: options?.cache === false ? 'no-store' : 'default',
       signal: controller.signal,
     });
-  } catch (error) {
-    throw error;
   } finally {
     window.clearTimeout(timeoutId);
   }
 
-  let data: TResponse | JsonRecord | null = null;
+  let data: TResponse | JsonRecord | null;
   try {
     data = (await response.json()) as TResponse;
   } catch {

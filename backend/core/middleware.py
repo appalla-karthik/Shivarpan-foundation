@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.utils import timezone
 
 from foundation.models import PageView, Visitor
@@ -62,7 +63,7 @@ class AnalyticsMiddleware:
             str(new_uuid),
             max_age=60 * 60 * 24 * 365 * 2,
             samesite="Lax",
-            secure=False,
+            secure=not settings.DEBUG,
             httponly=True,
         )
         return new_uuid

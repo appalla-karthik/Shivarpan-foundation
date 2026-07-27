@@ -31,6 +31,7 @@ export interface RecentProject {
   partners: number;
   budget: number;
   spent: number;
+  actualOnlineRaised: number;
   objective: string;
   outcomes: string[];
 }
@@ -42,6 +43,10 @@ export interface RecentProjectsApiItem {
   summary?: string;
   description?: string;
   partner_organization?: string;
+  funding_target_amount?: number;
+  actual_online_raised_amount?: number;
+  public_raised_amount?: number;
+  funding_remaining_amount?: number;
   impact_numbers?: Record<string, unknown> | null;
   featured_image?: {
     url?: string | null;
@@ -76,6 +81,7 @@ export const recentProjects: RecentProject[] = [
     partners: 9,
     budget: 180000,
     spent: 180000,
+    actualOnlineRaised: 0,
     objective:
       "Protect high-risk households from winter food insecurity through rapid distribution and nutrition support.",
     outcomes: [
@@ -98,6 +104,7 @@ export const recentProjects: RecentProject[] = [
     partners: 14,
     budget: 220000,
     spent: 220000,
+    actualOnlineRaised: 0,
     objective:
       "Reduce dropout risk among first-generation learners through scholarship continuity and mentoring support.",
     outcomes: [
@@ -120,6 +127,7 @@ export const recentProjects: RecentProject[] = [
     partners: 7,
     budget: 260000,
     spent: 252000,
+    actualOnlineRaised: 0,
     objective:
       "Expand access to preventive diagnostics and follow-up referrals for underserved communities.",
     outcomes: [
@@ -142,6 +150,7 @@ export const recentProjects: RecentProject[] = [
     partners: 11,
     budget: 140000,
     spent: 125500,
+    actualOnlineRaised: 0,
     objective:
       "Rebuild degraded urban green stretches using high-survival plantation cycles and local stewardship.",
     outcomes: [
@@ -387,11 +396,19 @@ export const mapRecentProjectsFromApi = (
         readImpactNumber(impact, "partners", "partner_count", "delivery_partners") ??
         0,
       budget:
-        readImpactNumber(impact, "budget", "target", "allocated_budget") ??
-        0,
+        typeof item.funding_target_amount === "number"
+          ? item.funding_target_amount
+          : readImpactNumber(impact, "budget", "target", "allocated_budget") ??
+            0,
       spent:
-        readImpactNumber(impact, "spent", "raised", "utilized", "deployed") ??
-        0,
+        typeof item.public_raised_amount === "number"
+          ? item.public_raised_amount
+          : readImpactNumber(impact, "spent", "raised", "utilized", "deployed") ??
+            0,
+      actualOnlineRaised:
+        typeof item.actual_online_raised_amount === "number"
+          ? item.actual_online_raised_amount
+          : 0,
       objective,
       outcomes:
         readImpactStringArray(impact, "outcomes", "highlights", "milestones") ??

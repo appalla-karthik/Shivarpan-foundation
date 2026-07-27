@@ -6,6 +6,8 @@ from foundation.models import GalleryItem
 from django import forms
 from django.conf import settings
 from django.contrib import admin
+from django.db.models import BigIntegerField, F, Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -20,6 +22,7 @@ from foundation.models import (
     ContactSubmission,
     Donation,
     DonationPaymentLog,
+    DonationTransaction,
     Homepage,
     HomepageSection,
     MagazineIssue,
@@ -66,6 +69,16 @@ class RichTextAdminMixin:
 
 
 class ProjectAdminForm(forms.ModelForm):
+    current_public_raised_amount = forms.IntegerField(
+        min_value=0,
+        required=True,
+        label="Set current public raised amount (INR)",
+        help_text=(
+            "Enter the exact total that should be visible on the website right now. "
+            "Verified online payments are preserved separately and every new successful "
+            "payment will automatically increase this total."
+        ),
+    )
     impact_numbers = forms.JSONField(
         required=False,
         widget=forms.Textarea(
@@ -82,8 +95,6 @@ class ProjectAdminForm(forms.ModelForm):
                     '  "beneficiaries": 860,\n'
                     '  "volunteers": 48,\n'
                     '  "partners": 7,\n'
-                    '  "budget": 260000,\n'
-                    '  "spent": 252000,\n'
                     '  "objective": "Expand access to preventive diagnostics.",\n'
                     '  "outcomes": ["500+ patients screened", "Referral desk active"]\n'
                     '}'
@@ -94,8 +105,8 @@ class ProjectAdminForm(forms.ModelForm):
             "Recent Projects showcase uses this JSON dynamically. "
             "Recommended keys: <code>focus</code>, <code>status</code>, <code>location</code>, "
             "<code>timeline</code>, <code>beneficiaries</code>, <code>volunteers</code>, "
-            "<code>partners</code>, <code>budget</code>, <code>spent</code>, "
-            "<code>objective</code>, and <code>outcomes</code>."
+            "<code>partners</code>, <code>objective</code>, and <code>outcomes</code>. "
+            "Funding values belong only in the Funding control fields above."
         ),
     )
 
@@ -103,8 +114,58 @@ class ProjectAdminForm(forms.ModelForm):
         model = Project
         fields = "__all__"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["current_public_raised_amount"].initial = (
+                self.instance.public_raised_amount
+            )
+        else:
+            self.fields["current_public_raised_amount"].initial = 0
+
     def clean_impact_numbers(self):
-        return self.cleaned_data.get("impact_numbers") or {}
+        impact_numbers = dict(self.cleaned_data.get("impact_numbers") or {})
+        for reserved_key in (
+            "budget",
+            "target",
+            "allocated_budget",
+            "spent",
+            "raised",
+            "utilized",
+            "deployed",
+            "remaining",
+            "progress",
+        ):
+            impact_numbers.pop(reserved_key, None)
+        return impact_numbers
+
+    def clean_current_public_raised_amount(self):
+        desired_total = self.cleaned_data["current_public_raised_amount"]
+        actual_online = (
+            self.instance.actual_online_raised_amount
+            if self.instance and self.instance.pk
+            else 0
+        )
+        if desired_total < actual_online:
+            raise forms.ValidationError(
+                f"Public raised amount cannot be below the actual online collection "
+                f"of INR {actual_online:,}."
+            )
+        return desired_total
+
+    def save(self, commit=True):
+        project = super().save(commit=False)
+        desired_total = self.cleaned_data["current_public_raised_amount"]
+        actual_online = (
+            self.instance.actual_online_raised_amount
+            if self.instance and self.instance.pk
+            else 0
+        )
+        project.manual_raised_amount = max(desired_total - actual_online, 0)
+        if commit:
+            project.save()
+            self.save_m2m()
+        return project
 
 
 @admin.register(MediaAsset, site=admin_site)
@@ -329,12 +390,140 @@ class PodcastEpisodeAdmin(RichTextAdminMixin, admin.ModelAdmin):
 class ProjectAdmin(RichTextAdminMixin, admin.ModelAdmin):
     form = ProjectAdminForm
     rich_text_fields = ("description", "summary")
-    list_display = ("title", "slug", "status", "publish_at", "updated_at")
+    list_display = (
+        "title",
+        "funding_target_display",
+        "public_raised_display",
+        "actual_online_display",
+        "funding_remaining_display",
+        "status",
+        "updated_at",
+    )
     list_filter = ("status",)
     search_fields = ("title", "slug", "partner_organization")
     prepopulated_fields = {"slug": ("title",)}
     autocomplete_fields = ("featured_image", "testimonial", "og_image")
     filter_horizontal = ("gallery",)
+    readonly_fields = (
+        "actual_online_collection",
+        "manual_opening_balance",
+        "calculated_remaining_amount",
+        "created_at",
+        "updated_at",
+    )
+    fieldsets = (
+        (
+            "Project",
+            {
+                "fields": (
+                    "title",
+                    "slug",
+                    "status",
+                    "publish_at",
+                    "partner_organization",
+                )
+            },
+        ),
+        (
+            "Funding control",
+            {
+                "description": (
+                    "Set the exact public total here. Actual verified online collection "
+                    "is read-only and new successful transactions are added automatically."
+                ),
+                "fields": (
+                    "funding_target_amount",
+                    "current_public_raised_amount",
+                    "actual_online_collection",
+                    "manual_opening_balance",
+                    "calculated_remaining_amount",
+                ),
+            },
+        ),
+        (
+            "Content and impact",
+            {
+                "fields": (
+                    "summary",
+                    "description",
+                    "impact_numbers",
+                    "featured_image",
+                    "gallery",
+                    "testimonial",
+                )
+            },
+        ),
+        (
+            "SEO",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "seo_title",
+                    "seo_description",
+                    "canonical_url",
+                    "og_title",
+                    "og_description",
+                    "og_image",
+                ),
+            },
+        ),
+        (
+            "System",
+            {
+                "classes": ("collapse",),
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            actual_online_paise=Coalesce(
+                Sum(
+                    F("transactions__amount_paise")
+                    - F("transactions__refunded_amount_paise")
+                ),
+                Value(0),
+                output_field=BigIntegerField(),
+            )
+        )
+
+    @admin.display(description="Target")
+    def funding_target_display(self, obj):
+        return f"INR {obj.funding_target_amount:,}"
+
+    @admin.display(description="Public raised")
+    def public_raised_display(self, obj):
+        return f"INR {obj.public_raised_amount:,}"
+
+    @admin.display(description="Actual online")
+    def actual_online_display(self, obj):
+        return f"INR {obj.actual_online_raised_amount:,}"
+
+    @admin.display(description="Remaining")
+    def funding_remaining_display(self, obj):
+        return f"INR {obj.funding_remaining_amount:,}"
+
+    @admin.display(description="Actual verified online collection (read-only)")
+    def actual_online_collection(self, obj):
+        if not obj or not obj.pk:
+            return "INR 0"
+        return format_html(
+            "<strong>INR {}</strong> — calculated from captured payments after refunds.",
+            f"{obj.actual_online_raised_amount:,}",
+        )
+
+    @admin.display(description="Manual/opening component (read-only)")
+    def manual_opening_balance(self, obj):
+        if not obj or not obj.pk:
+            return "INR 0"
+        return f"INR {obj.manual_raised_amount:,}"
+
+    @admin.display(description="Remaining against target (read-only)")
+    def calculated_remaining_amount(self, obj):
+        if not obj or not obj.pk:
+            return "INR 0"
+        return f"INR {obj.funding_remaining_amount:,}"
 
 
 @admin.register(HomepageSection, site=admin_site)
@@ -497,35 +686,104 @@ class DonationAdmin(admin.ModelAdmin):
         "amount",
         "donation_type",
         "donation_category",
-        "atg_requested",
+        "project",
+        "eighty_g_requested",
         "status",
         "razorpay_payment_id",
         "created_at",
     )
-    list_filter = ("donation_type", "donation_category", "atg_requested", "status", "created_at")
+    list_filter = ("donation_type", "donation_category", "eighty_g_requested", "status", "created_at")
     inlines = [DonationPaymentLogInline]
     search_fields = (
         "donor_name",
         "donor_email",
         "donor_phone",
-        "pan_number",
         "donation_category",
+        "project__title",
         "receipt",
         "razorpay_order_id",
         "razorpay_subscription_id",
         "razorpay_payment_id",
     )
     readonly_fields = (
+        "donor_name",
+        "donor_email",
+        "donor_phone",
+        "amount",
+        "currency",
+        "donation_type",
+        "payment_mode_preference",
+        "project",
+        "project_slug",
+        "project_title",
+        "donation_category",
+        "eighty_g_requested",
+        "pan_number",
+        "message",
+        "status",
         "receipt",
         "razorpay_order_id",
         "razorpay_plan_id",
         "razorpay_subscription_id",
         "razorpay_payment_id",
         "razorpay_signature",
+        "razorpay_status",
         "verified_at",
         "created_at",
         "updated_at",
+        "notes",
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DonationTransaction, site=admin_site)
+class DonationTransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        "razorpay_payment_id",
+        "donation",
+        "project",
+        "net_amount_display",
+        "status",
+        "source",
+        "paid_at",
+    )
+    list_filter = ("status", "source", "currency", "paid_at")
+    search_fields = (
+        "razorpay_payment_id",
+        "donation__donor_name",
+        "donation__donor_email",
+        "project__title",
+        "project__slug",
+    )
+    readonly_fields = (
+        "donation",
+        "project",
+        "razorpay_payment_id",
+        "amount_paise",
+        "refunded_amount_paise",
+        "currency",
+        "status",
+        "source",
+        "paid_at",
+        "payload",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description="Net actual amount")
+    def net_amount_display(self, obj):
+        return f"INR {obj.net_amount_paise / 100:,.2f}"
 
 
 @admin.register(AwardNomination, site=admin_site)
@@ -550,11 +808,24 @@ class DonationPaymentLogAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("donation", "event_type", "status_snapshot", "message", "payload", "created_at", "updated_at")
 
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(Visitor, site=admin_site)
 class VisitorAdmin(admin.ModelAdmin):
     list_display = ("visitor_id", "first_seen_at", "last_seen_at")
     search_fields = ("visitor_id",)
+    readonly_fields = ("visitor_id", "first_seen_at", "last_seen_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PageView, site=admin_site)
@@ -563,6 +834,20 @@ class PageViewAdmin(admin.ModelAdmin):
     list_filter = ("created_at",)
     search_fields = ("path", "full_path", "referer", "user_agent", "visitor__visitor_id")
     autocomplete_fields = ("visitor",)
+    readonly_fields = (
+        "visitor",
+        "path",
+        "full_path",
+        "referer",
+        "user_agent",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(GalleryItem, site=admin_site)

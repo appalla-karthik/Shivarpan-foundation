@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import AnimatedSection from "@/components/AnimatedSection";
 import PageHero from "@/components/PageHero";
 import NotFound from "@/pages/NotFound";
-import { getJson, reportApiError } from "@/lib/api";
+import { assetUrl, getJson, reportApiError } from "@/lib/api";
+import { safeCmsLink, sanitizeCmsHtml, sanitizeEmbedHtml } from "@/lib/sanitizeHtml";
 
 type MediaAsset = {
   id: number;
@@ -104,6 +105,12 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [lightboxImage]);
 
+  useEffect(() => {
+    if (page?.title && !fallback) {
+      document.title = `${page.title} | Shivarpan Foundation`;
+    }
+  }, [fallback, page?.title]);
+
   const heroSubtitle = useMemo(() => {
     if (!page?.seo_description) {
       return "Stay connected with Shivarpan Foundation’s latest initiatives and community updates.";
@@ -125,18 +132,16 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
     );
   }
 
-  const hasBody = Boolean(page.body?.trim());
-  const hasEmbed = Boolean(page.embed_html?.trim());
   const enabledSections = page.sections?.filter((section) => section.is_enabled) ?? [];
-  const hasSections = enabledSections.length > 0;
-  const shouldShowFallback = Boolean(fallback) && !hasBody && !hasEmbed && !hasSections;
 
-  if (shouldShowFallback) {
+  // Functional routes keep their tested React page. CMS metadata can customize
+  // the hero without replacing forms, project funding, or event behavior.
+  if (fallback) {
     if (isValidElement(fallback)) {
       return cloneElement(fallback, {
         heroTitle: page.title,
         heroSubtitle: page.seo_description?.trim() || undefined,
-        heroImage: page.cover_image?.url || undefined,
+        heroImage: assetUrl(page.cover_image?.url) || undefined,
       } as Record<string, unknown>);
     }
     return <>{fallback}</>;
@@ -147,7 +152,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
       <PageHero
         title={page.title}
         subtitle={heroSubtitle}
-        image={page.cover_image?.url}
+        image={assetUrl(page.cover_image?.url)}
       />
 
       <section className="relative py-10 sm:py-12 md:py-14">
@@ -172,7 +177,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                 }}
               >
                 {page.body ? (
-                  <div dangerouslySetInnerHTML={{ __html: page.body }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(page.body) }} />
                 ) : (
                   <p>Fresh content is being prepared for this page.</p>
                 )}
@@ -185,7 +190,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                   viewport={{ once: true, amount: 0.3 }}
                   className="mt-8 overflow-hidden rounded-2xl border border-border/70 bg-background/80"
                 >
-                  <div dangerouslySetInnerHTML={{ __html: page.embed_html }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeEmbedHtml(page.embed_html) }} />
                 </motion.div>
               ) : null}
             </AnimatedSection>
@@ -202,7 +207,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                     return (
                       <AnimatedSection key={section.id}>
                         <div className="overflow-hidden rounded-[1.6rem] border border-border/80 bg-card/90 p-4 shadow-[0_24px_70px_-52px_hsl(var(--foreground))] backdrop-blur-sm">
-                          <div dangerouslySetInnerHTML={{ __html: section.embed_html }} />
+                          <div dangerouslySetInnerHTML={{ __html: sanitizeEmbedHtml(section.embed_html) }} />
                         </div>
                       </AnimatedSection>
                     );
@@ -218,7 +223,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                         <div className={isSplit ? "grid gap-6 lg:grid-cols-2 lg:items-center" : "space-y-4"}>
                           {section.image && imageLeft ? (
                             <div className="overflow-hidden rounded-2xl border border-border/70">
-                              <img src={section.image.url} alt={section.title || "Section image"} className="h-full w-full object-cover" />
+                              <img src={assetUrl(section.image.url)} alt={section.title || "Section image"} className="h-full w-full object-cover" />
                             </div>
                           ) : null}
 
@@ -227,11 +232,11 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
                               <h2 className="font-display text-2xl font-bold text-foreground">{section.title}</h2>
                             ) : null}
                             {section.body ? (
-                              <div dangerouslySetInnerHTML={{ __html: section.body }} />
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(section.body) }} />
                             ) : null}
-                            {section.button_text && section.button_url ? (
+                            {section.button_text && safeCmsLink(section.button_url) ? (
                               <a
-                                href={section.button_url}
+                                href={safeCmsLink(section.button_url)}
                                 className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary transition hover:bg-primary hover:text-primary-foreground"
                               >
                                 {section.button_text}
@@ -241,7 +246,7 @@ const DynamicPage = ({ slug: forcedSlug, fallback }: DynamicPageProps) => {
 
                           {section.image && !imageLeft ? (
                             <div className="overflow-hidden rounded-2xl border border-border/70">
-                              <img src={section.image.url} alt={section.title || "Section image"} className="h-full w-full object-cover" />
+                              <img src={assetUrl(section.image.url)} alt={section.title || "Section image"} className="h-full w-full object-cover" />
                             </div>
                           ) : null}
                         </div>

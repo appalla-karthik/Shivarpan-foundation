@@ -24,6 +24,27 @@ This `backend/` folder contains a Django backend + admin panel to manage:
 
 Admin panel: `http://127.0.0.1:8000/admin/`
 
+### Project funding totals
+
+Open **Projects** in the admin and edit a project:
+
+- **Funding target amount** is the public target in INR.
+- **Set current public raised amount** sets the exact amount visible on the website.
+- **Actual verified online collection** is read-only and comes from captured Razorpay payments, net of recorded refunds.
+- Every new successful project payment is automatically added to the public raised amount.
+
+For recurring payments and refunds, configure a Razorpay webhook pointing to:
+
+- Local/testing: `http://127.0.0.1:8000/api/donations/webhook/`
+- Production: `https://shivarpanfoundation.org/api/donations/webhook/`
+
+Enable the `payment.captured`, `subscription.charged`, and `payment.refunded`
+events and set the same secret in `RAZORPAY_WEBHOOK_SECRET`.
+
+The webhook secret is a separate value chosen while creating the webhook in
+the Razorpay Dashboard. It is not `RAZORPAY_KEY_SECRET`. Keep both values only
+in `backend/.env`; never commit them.
+
 Dynamic website pages (Django-rendered):
 - Home: `http://127.0.0.1:8000/`
 - Any Page by slug: `http://127.0.0.1:8000/<slug>/`
