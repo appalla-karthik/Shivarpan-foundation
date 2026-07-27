@@ -649,7 +649,11 @@ class ProjectViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class TestimonialViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Testimonial.objects.filter(is_approved=True, is_hidden=False).order_by("-created_at")
+    queryset = (
+        Testimonial.objects.filter(is_approved=True, is_hidden=False)
+        .select_related("photo", "media")
+        .order_by("-created_at")
+    )
     serializer_class = TestimonialSerializer
 
 

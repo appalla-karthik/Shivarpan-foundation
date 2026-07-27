@@ -6,6 +6,8 @@ from foundation.models import GalleryItem
 from django import forms
 from django.conf import settings
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.core.files.images import get_image_dimensions
 from django.db.models import BigIntegerField, F, Sum, Value
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
@@ -68,6 +70,68 @@ class RichTextAdminMixin:
                 if isinstance(widget, forms.Textarea):
                     widget.attrs["class"] = (widget.attrs.get("class", "") + " richtext").strip()
         return form
+
+
+class TestimonialAdminForm(forms.ModelForm):
+    review_upload = forms.FileField(
+        required=False,
+        label="Upload new testimonial image or video",
+        help_text=(
+            "Upload JPEG, PNG, WebP, MP4, WebM, MOV, or M4V. "
+            "Images can be up to 10 MB and videos up to 100 MB."
+        ),
+    )
+
+    class Meta:
+        model = Testimonial
+        fields = "__all__"
+
+    def clean_review_upload(self):
+        uploaded = self.cleaned_data.get("review_upload")
+        if not uploaded:
+            return uploaded
+
+        file_name = (uploaded.name or "").lower()
+        image_extensions = (".jpg", ".jpeg", ".png", ".webp")
+        video_extensions = (".mp4", ".webm", ".mov", ".m4v")
+
+        if file_name.endswith(image_extensions):
+            if uploaded.size > 10 * 1024 * 1024:
+                raise ValidationError("Testimonial images must be 10 MB or smaller.")
+            try:
+                width, height = get_image_dimensions(uploaded)
+                uploaded.seek(0)
+            except Exception as exc:
+                raise ValidationError("The uploaded testimonial image is not valid.") from exc
+            if not width or not height:
+                raise ValidationError("The uploaded testimonial image is not valid.")
+            return uploaded
+
+        if file_name.endswith(video_extensions):
+            if uploaded.size > 100 * 1024 * 1024:
+                raise ValidationError(
+                    "Testimonial videos must be 100 MB or smaller."
+                )
+            content_type = (getattr(uploaded, "content_type", "") or "").lower()
+            if content_type and not (
+                content_type.startswith("video/")
+                or content_type == "application/octet-stream"
+            ):
+                raise ValidationError("The uploaded file is not a valid video.")
+            return uploaded
+
+        raise ValidationError(
+            "Upload a JPEG, PNG, WebP, MP4, WebM, MOV, or M4V file."
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("review_upload") and cleaned_data.get("media"):
+            self.add_error(
+                "review_upload",
+                "Choose either a new upload or an existing Media Asset, not both.",
+            )
+        return cleaned_data
 
 
 class ProjectAdminForm(forms.ModelForm):
@@ -397,7 +461,16 @@ class MagazineStoryAdmin(RichTextAdminMixin, admin.ModelAdmin):
 
 @admin.register(Testimonial, site=admin_site)
 class TestimonialAdmin(admin.ModelAdmin):
-    list_display = ("name", "organization", "designation", "is_approved", "is_hidden", "created_at")
+    form = TestimonialAdminForm
+    list_display = (
+        "name",
+        "organization",
+        "designation",
+        "review_format",
+        "is_approved",
+        "is_hidden",
+        "created_at",
+    )
     list_filter = ("is_approved", "is_hidden")
     search_fields = ("name", "organization", "designation", "quote")
     autocomplete_fields = ("photo", "media")
@@ -416,13 +489,37 @@ class TestimonialAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Media",
+            "Image or video review",
             {
-                "description": "Use Media for either a testimonial photo or video. Photo remains as an image fallback.",
-                "fields": ("media", "photo"),
+                "description": (
+                    "Upload a new review image/video directly, or select an existing "
+                    "Media Asset. Profile photo is optional and remains visible beside "
+                    "the person's name."
+                ),
+                "fields": ("review_upload", "media", "photo"),
             },
         ),
     )
+
+    @admin.display(description="Review format")
+    def review_format(self, obj):
+        review_media = obj.media or obj.photo
+        if not review_media:
+            return "Text only"
+        return review_media.get_media_type_display()
+
+    def save_model(self, request, obj, form, change):
+        uploaded = form.cleaned_data.get("review_upload")
+        if uploaded:
+            media_asset = MediaAsset(
+                title=f"{obj.name} testimonial",
+                category="Testimonials",
+                file=uploaded,
+                alt_text=f"{obj.name} testimonial review",
+            )
+            media_asset.save()
+            obj.media = media_asset
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(TeamMember, site=admin_site)

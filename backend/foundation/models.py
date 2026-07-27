@@ -225,6 +225,19 @@ class Testimonial(TimeStampedModel):
     is_approved = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
 
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.photo_id and self.photo.media_type != MediaAsset.MediaType.IMAGE:
+            errors["photo"] = "Select an image asset for the profile photo."
+        if self.media_id and self.media.media_type not in {
+            MediaAsset.MediaType.IMAGE,
+            MediaAsset.MediaType.VIDEO,
+        }:
+            errors["media"] = "Testimonial media must be an image or video."
+        if errors:
+            raise ValidationError(errors)
+
     def __str__(self) -> str:
         return f"{self.name} ({self.organization})" if self.organization else self.name
 

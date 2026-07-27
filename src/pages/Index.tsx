@@ -542,7 +542,6 @@ const Index = () => {
         .slice(0, aboutVisualLayouts.length)
         .map((item, index) => {
         const visual = aboutVisualLayouts[index];
-        const testimonialMedia = item.media || item.photo;
         return {
           ...visual,
           image: item.image,
@@ -618,6 +617,7 @@ const Index = () => {
 
     if (testimonialItems.length) {
       return testimonialItems.map((item, index) => {
+        const testimonialMedia = item.media || item.photo;
         const initials =
           item.name
             ?.split(" ")
@@ -637,11 +637,17 @@ const Index = () => {
           media: testimonialMedia
             ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
             : null,
+          isVideoReview: isVideoMedia(testimonialMedia),
         };
       });
     }
 
-    return testimonials.map((item) => ({ ...item, media: null, photoUrl: undefined }));
+    return testimonials.map((item) => ({
+      ...item,
+      media: null,
+      photoUrl: undefined,
+      isVideoReview: false,
+    }));
   }, [homepage, testimonialItems]);
 
   return (
@@ -1642,7 +1648,9 @@ const Index = () => {
                             src={item.media.url}
                             controls
                             preload="metadata"
-                            className="h-full w-full object-cover"
+                            playsInline
+                            poster={item.photoUrl || undefined}
+                            className="h-full w-full bg-black object-contain"
                             aria-label={`${item.name} testimonial video`}
                           />
                         ) : (
@@ -1663,7 +1671,13 @@ const Index = () => {
                           </span>
                         </div>
                       )}
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/70 to-transparent" />
+                      {item.isVideoReview ? (
+                        <span className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                          Video review
+                        </span>
+                      ) : (
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/70 to-transparent" />
+                      )}
                     </div>
                     <div className="relative flex items-center gap-1 px-4 pt-4 text-accent">
                       {Array.from({ length: 5 }).map((_, i) => (
