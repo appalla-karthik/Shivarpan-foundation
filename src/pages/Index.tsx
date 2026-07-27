@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  ArrowUpRight,
   Award,
   BookOpen,
   Calendar,
@@ -14,7 +15,6 @@ import {
   Heart,
   Handshake,
   Mail,
-  MapPin,
   Mic,
   Play,
   Sparkles,
@@ -495,7 +495,7 @@ const Index = () => {
     return () => window.clearTimeout(timerId);
   }, []);
 
-  const activeEvent = upcomingEvents[activeHeroSlide % Math.max(upcomingEvents.length, 1)];
+  const latestEvent = upcomingEvents[0];
   const nextHeroSlide = () => {
     if (heroSlides.length === 0) {
       return;
@@ -716,13 +716,37 @@ const Index = () => {
         </div>
 
         <div className="relative z-10 container mx-auto px-4 pt-28 pb-28 sm:pb-32 md:pt-32 md:pb-36">
-          <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] xl:gap-12">
-            <div className="max-w-5xl">
+          {latestEvent ? (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.3 }}
+              className="absolute right-4 top-5 z-20 max-w-[calc(100%-2rem)] sm:top-7 sm:max-w-[19rem]"
+            >
+              <Link
+                to={latestEvent.cta_url || "/upcoming-events"}
+                className="group flex items-center gap-3 rounded-xl border border-primary-foreground/20 bg-foreground/48 px-3 py-2 text-primary-foreground shadow-[0_14px_40px_-24px_rgba(0,0,0,0.95)] backdrop-blur-lg transition hover:border-accent/55 hover:bg-foreground/62 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label={`View upcoming event: ${latestEvent.title}`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-accent">
+                    Suggested · Upcoming event
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs font-semibold sm:text-[13px]">
+                    {latestEvent.title}
+                  </span>
+                </span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-primary-foreground/70 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
+              </Link>
+            </motion.div>
+          ) : null}
+
+          <div className="max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
-              className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-foreground/48 px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_12px_34px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md sm:text-sm lg:mx-0"
+              className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-foreground/48 px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_12px_34px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md lg:mx-0"
             >
               <Sparkles className="h-4 w-4 text-accent" />
               {homeHeroContent.badge}
@@ -732,7 +756,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
-              className="mb-6 text-center font-display text-4xl font-bold leading-[0.98] text-primary-foreground [text-shadow:0_3px_28px_rgba(0,0,0,0.82),0_1px_3px_rgba(0,0,0,0.95)] sm:text-5xl md:text-6xl lg:text-left lg:text-7xl"
+              className="mb-6 text-center font-display text-4xl font-bold leading-[0.99] text-primary-foreground [text-shadow:0_3px_28px_rgba(0,0,0,0.82),0_1px_3px_rgba(0,0,0,0.95)] sm:text-5xl md:text-[3.5rem] lg:text-left lg:text-6xl"
             >
               {heroTitle}
             </motion.h1>
@@ -741,7 +765,7 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="mx-auto mb-8 max-w-4xl text-center text-base font-medium leading-relaxed text-primary-foreground/95 [text-shadow:0_2px_14px_rgba(0,0,0,0.85)] sm:text-lg lg:mx-0 lg:text-left"
+              className="mx-auto mb-8 max-w-4xl text-center text-sm font-medium leading-relaxed text-primary-foreground/95 [text-shadow:0_2px_14px_rgba(0,0,0,0.85)] sm:text-base lg:mx-0 lg:text-left"
             >
               {heroDescription}
             </motion.p>
@@ -800,71 +824,6 @@ const Index = () => {
                 </Button>
               </Link>
             </motion.div>
-            </div>
-
-            <motion.aside
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.35 }}
-              className="relative overflow-hidden rounded-[1.6rem] border border-primary-foreground/25 bg-[linear-gradient(145deg,hsl(var(--foreground)/0.76)_0%,hsl(var(--foreground)/0.62)_58%,hsl(var(--primary)/0.48)_100%)] p-5 text-primary-foreground shadow-[0_30px_90px_-42px_rgba(0,0,0,0.98)] backdrop-blur-xl"
-            >
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-foreground/10 via-transparent to-accent/10" />
-              <div className="relative">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Upcoming Event
-                  </span>
-                  <span className="text-xs text-primary-foreground/65">
-                    {heroSlides.length > 0
-                      ? `${String(activeHeroSlide + 1).padStart(2, "0")} / ${String(heroSlides.length).padStart(2, "0")}`
-                      : "00 / 00"}
-                  </span>
-                </div>
-
-                {activeEvent ? (
-                  <>
-                    <h3 className="font-display text-2xl font-semibold leading-tight">
-                      {activeEvent.title}
-                    </h3>
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-primary-foreground/78">
-                      {activeEvent.subtitle || activeEvent.description}
-                    </p>
-                    <div className="mt-5 grid gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/80">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/12 px-3 py-2">
-                        <Calendar className="h-3.5 w-3.5 text-accent" />
-                        {activeEvent.date_label || "Upcoming"}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/12 px-3 py-2">
-                        <MapPin className="h-3.5 w-3.5 text-accent" />
-                        {activeEvent.location_label || "Pan India"}
-                      </span>
-                    </div>
-                    <Link to={activeEvent.cta_url || "/upcoming-events"} className="mt-5 inline-flex">
-                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-                        {activeEvent.cta_text || "View Event"}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="font-display text-2xl font-semibold leading-tight">
-                      Upcoming events will appear here
-                    </h3>
-                    <p className="mt-3 text-sm leading-6 text-primary-foreground/78">
-                      Fresh event highlights are coming soon.
-                    </p>
-                    <Link to="/upcoming-events" className="mt-5 inline-flex">
-                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-                        Upcoming Events
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </motion.aside>
           </div>
         </div>
 
