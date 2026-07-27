@@ -6,33 +6,169 @@
     <div class="shiv-dashboard__hero">
       <p class="shiv-dashboard__eyebrow">Admin Overview</p>
       <h1 class="shiv-dashboard__title">Dashboard</h1>
+
       <p class="shiv-dashboard__subtitle">
-        Track website activity, recent inquiries, and content health from one place.
+        Track website activity, recent inquiries, campaign donations, and content health from one place.
       </p>
     </div>
 
     <div class="shiv-dashboard__stats">
       <div class="module shiv-dashboard__stat">
+        <h2>Donation Raised</h2>
+
+        <div class="shiv-dashboard__stat-value">
+          INR {{ kpi_donations_total }}
+        </div>
+
+        <p class="shiv-dashboard__stat-note">
+          {{ kpi_donors_total }} verified payments
+        </p>
+      </div>
+
+      <div class="module shiv-dashboard__stat">
+        <h2>Campaign Raised</h2>
+
+        <div class="shiv-dashboard__stat-value">
+          INR {{ campaign_total_raised }}
+        </div>
+
+        <p class="shiv-dashboard__stat-note">
+          {{ campaign_breakdown|length }} campaigns funded
+        </p>
+      </div>
+
+      <div class="module shiv-dashboard__stat">
         <h2>Total Visitors</h2>
-        <div class="shiv-dashboard__stat-value">{{ kpi_visitors_total }}</div>
+
+        <div class="shiv-dashboard__stat-value">
+          {{ kpi_visitors_total }}
+        </div>
+
+        <p class="shiv-dashboard__stat-note">
+          {{ kpi_pageviews_total }} page views
+        </p>
       </div>
-      <div class="module shiv-dashboard__stat">
-        <h2>Total Page Views</h2>
-        <div class="shiv-dashboard__stat-value">{{ kpi_pageviews_total }}</div>
-      </div>
-      <div class="module shiv-dashboard__stat">
-        <h2>Pages</h2>
-        <div class="shiv-dashboard__stat-value">{{ kpi_pages_total }}</div>
-      </div>
+
       <div class="module shiv-dashboard__stat">
         <h2>Articles</h2>
-        <div class="shiv-dashboard__stat-value">{{ kpi_articles_total }}</div>
+
+        <div class="shiv-dashboard__stat-value">
+          {{ kpi_articles_total }}
+        </div>
+
+        <p class="shiv-dashboard__stat-note">
+          {{ kpi_pages_total }} pages live
+        </p>
       </div>
     </div>
 
     <div class="shiv-dashboard__grid">
+      <div class="module shiv-dashboard__panel shiv-dashboard__panel--wide">
+        <div class="shiv-dashboard__panel-heading">
+          <div>
+            <h2>Campaign Donation Analysis</h2>
+
+            <p>
+              Verified payments grouped by selected project/campaign.
+            </p>
+          </div>
+
+          <span>Live admin data</span>
+        </div>
+
+        <div class="shiv-dashboard__campaign-layout">
+          <div
+            class="shiv-dashboard__pie"
+            aria-label="Campaign donation pie chart"
+          >
+            {% for c in campaign_breakdown %}
+              <span
+                style="--value: {{ c.percent }}; --offset: {{ c.offset }}; --color: {{ c.color }};"
+              ></span>
+            {% empty %}
+              <em>No campaign donations yet</em>
+            {% endfor %}
+          </div>
+
+          <table class="shiv-dashboard__table shiv-dashboard__table--campaigns">
+            <thead>
+              <tr>
+                <th>Campaign</th>
+                <th>Raised</th>
+                <th>Donors</th>
+                <th>Share</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for c in campaign_breakdown %}
+                <tr>
+                  <td>
+                    <span
+                      class="shiv-dashboard__legend"
+                      style="background: {{ c.color }}"
+                    ></span>
+
+                    {{ c.project_title|default:c.project_slug }}
+                  </td>
+
+                  <td>INR {{ c.raised }}</td>
+                  <td>{{ c.donors }}</td>
+                  <td>{{ c.percent }}%</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4">
+                    No verified campaign donations yet.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="module shiv-dashboard__panel">
-        <h2>Contact Messages (New: {{ contacts_new_count }})</h2>
+        <h2>Recent Donations</h2>
+
+        <table class="shiv-dashboard__table shiv-dashboard__table--donations">
+          <thead>
+            <tr>
+              <th>Donor</th>
+              <th>Campaign</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for d in recent_donations %}
+              <tr>
+                <td>{{ d.donor_name }}</td>
+
+                <td>
+                  {{ d.project_title|default:"General Fund" }}
+                </td>
+
+                <td>INR {{ d.amount }}</td>
+                <td>{{ d.get_status_display }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4">
+                  No donations yet.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="module shiv-dashboard__panel">
+        <h2>
+          Contact Messages (New: {{ contacts_new_count }})
+        </h2>
+
         <table class="shiv-dashboard__table shiv-dashboard__table--contacts">
           <thead>
             <tr>
@@ -42,16 +178,27 @@
               <th>Time</th>
             </tr>
           </thead>
+
           <tbody>
             {% for m in recent_contacts %}
               <tr>
                 <td>{{ m.name }}</td>
-                <td><a href="mailto:{{ m.email }}">{{ m.email }}</a></td>
+
+                <td>
+                  <a href="mailto:{{ m.email }}">
+                    {{ m.email }}
+                  </a>
+                </td>
+
                 <td>{{ m.get_status_display }}</td>
                 <td>{{ m.created_at }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="4">No messages yet.</td></tr>
+              <tr>
+                <td colspan="4">
+                  No messages yet.
+                </td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -59,6 +206,7 @@
 
       <div class="module shiv-dashboard__panel">
         <h2>Recent Activity (Page Views)</h2>
+
         <table class="shiv-dashboard__table shiv-dashboard__table--activity">
           <thead>
             <tr>
@@ -67,22 +215,34 @@
               <th>Time</th>
             </tr>
           </thead>
+
           <tbody>
             {% for v in recent_pageviews %}
               <tr>
                 <td>{{ v.path }}</td>
-                <td class="shiv-dashboard__mono">{{ v.visitor.visitor_id }}</td>
+
+                <td class="shiv-dashboard__mono">
+                  {{ v.visitor.visitor_id }}
+                </td>
+
                 <td>{{ v.created_at }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="3">No page views yet.</td></tr>
+              <tr>
+                <td colspan="3">
+                  No page views yet.
+                </td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
 
-    <div id="content-main" class="shiv-dashboard__apps">
+    <div
+      id="content-main"
+      class="shiv-dashboard__apps"
+    >
       {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
     </div>
   </div>
