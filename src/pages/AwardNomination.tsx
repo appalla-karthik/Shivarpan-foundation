@@ -68,23 +68,35 @@ const AwardNomination = () => {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <aside className="overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-[0_28px_90px_-58px_hsl(var(--foreground))]">
-            <div className="relative aspect-[4/3] bg-muted">
+            <div className="relative flex min-h-[20rem] items-center justify-center overflow-hidden bg-[#070d11] p-2 sm:min-h-[24rem] sm:p-3">
               {heroImage ? (
-                <img src={heroImage} alt={selectedAward?.title || "Award"} className="h-full w-full object-cover" />
+                <>
+                  <img
+                    src={heroImage}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-[-5%] h-[110%] w-[110%] scale-110 object-cover opacity-30 blur-2xl saturate-110"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-black/35" />
+                  <img
+                    src={heroImage}
+                    alt={selectedAward?.title || "Award poster"}
+                    className="relative z-10 block h-auto max-h-[76vh] w-auto max-w-full object-contain drop-shadow-[0_18px_38px_rgba(0,0,0,0.45)]"
+                  />
+                </>
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                   <Trophy className="h-12 w-12" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/72 via-foreground/10 to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5 text-primary-foreground">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                  {selectedAward?.category || "Award Nomination"}
-                </p>
-                <h1 className="mt-2 font-display text-3xl font-bold leading-tight">
-                  {selectedAward?.title || "Award Nomination"}
-                </h1>
-              </div>
+            </div>
+            <div className="border-t border-border/70 p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                {selectedAward?.category || "Award Nomination"}
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-foreground">
+                {selectedAward?.title || "Award Nomination"}
+              </h1>
             </div>
           </aside>
 

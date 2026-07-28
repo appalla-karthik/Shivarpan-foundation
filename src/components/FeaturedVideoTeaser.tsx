@@ -102,44 +102,39 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#061f2b] shadow-[0_40px_100px_-55px_rgba(4,31,43,0.95)] md:rounded-[2.5rem]">
-            <div className="group relative min-h-[650px] overflow-hidden bg-black sm:min-h-[700px] lg:min-h-[720px]">
+          <div className="overflow-hidden rounded-[2rem] border border-[#123f50]/40 bg-[#061f2b] shadow-[0_38px_90px_-48px_rgba(4,31,43,0.9)] md:rounded-[2.5rem]">
+            <div className="group relative aspect-[4/5] min-h-[560px] overflow-hidden bg-[#061f2b] sm:aspect-[4/3] sm:min-h-[620px] lg:aspect-video lg:min-h-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeVideo.id}
-                  initial={{ opacity: 0, scale: 1.015 }}
+                  initial={{ opacity: 0, scale: 1.035 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-0"
                 >
-                  <img
-                    src={activeThumbnail}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full scale-110 object-cover opacity-[0.58] blur-2xl"
-                    onError={handleImageError}
-                  />
                   <img
                     src={activeThumbnail}
                     alt={
                       activeVideo.thumbnail?.alt_text ||
                       `${activeVideo.title} video thumbnail`
                     }
-                    className="relative h-full w-full object-contain transition duration-700 group-hover:scale-[1.018]"
+                    className="h-full w-full object-cover object-center transition [transition-duration:1400ms] ease-out group-hover:scale-[1.035]"
                     loading="lazy"
                     onError={handleImageError}
                   />
                 </motion.div>
               </AnimatePresence>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-[#020b10] via-[#020b10]/35 to-[#020b10]/10" />
-              <div className="absolute inset-x-0 bottom-0 h-[64%] bg-gradient-to-t from-[#020b10] via-[#031923]/[0.88] to-transparent" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,11,16,0.2)_0%,rgba(2,11,16,0.04)_30%,rgba(2,11,16,0.3)_58%,rgba(2,11,16,0.96)_100%)]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] bg-[linear-gradient(0deg,rgba(2,11,16,0.98)_0%,rgba(3,25,35,0.88)_28%,rgba(3,25,35,0.38)_62%,transparent_100%)]" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-[78%] bg-gradient-to-r from-[#020b10]/40 via-transparent to-transparent" />
+              <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/10" />
 
               <button
                 type="button"
                 onClick={() => setSelectedVideo(activeVideo)}
-                className="absolute left-1/2 top-[32%] grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/[0.45] bg-white/[0.16] text-white shadow-2xl backdrop-blur-md transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-20 sm:w-20 lg:top-[38%]"
+                className="absolute left-1/2 top-[30%] grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-20 sm:w-20 lg:top-[36%]"
                 aria-label={`Play ${activeVideo.title}`}
               >
                 <Play className="ml-1 h-6 w-6 sm:h-7 sm:w-7" fill="currentColor" />
@@ -153,9 +148,9 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="max-w-4xl rounded-[1.6rem] border border-white/15 bg-[#041923]/[0.64] p-5 text-white shadow-2xl backdrop-blur-xl sm:p-7 lg:p-8"
+                    className="max-w-4xl text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.62)]"
                   >
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/[0.58]">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65">
                       <span className="text-[#ffc278]">
                         {activeVideo.category || "Impact in Motion"}
                       </span>
@@ -169,14 +164,14 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                     <h3 className="mt-3 max-w-3xl font-display text-3xl font-bold leading-[1.05] sm:text-4xl lg:text-5xl">
                       {activeVideo.title}
                     </h3>
-                    <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/[0.72] sm:text-base">
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:mt-4 sm:text-base">
                       {activeVideo.short_description ||
                         "Watch this story from the field and discover the people behind Shivarpan's impact."}
                     </p>
                     <button
                       type="button"
                       onClick={() => setSelectedVideo(activeVideo)}
-                      className="mt-6 inline-flex w-fit items-center gap-3 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      className="mt-5 inline-flex w-fit items-center gap-3 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] shadow-[0_14px_32px_-16px_rgba(245,161,63,0.9)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-6"
                       aria-label={`Watch ${activeVideo.title}`}
                     >
                       <Play className="h-4 w-4" fill="currentColor" />
