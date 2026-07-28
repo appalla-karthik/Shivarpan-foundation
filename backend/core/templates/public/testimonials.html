@@ -16,6 +16,9 @@
           <div class="muted" style="margin-bottom: 10px;">
             {{ t.designation }}{% if t.organization %} · {{ t.organization }}{% endif %}
           </div>
+          <div aria-label="{{ t.rating }} out of 5 stars" style="color: #f59d3d; margin-bottom: 10px;">
+            ★ {{ t.rating }}/5
+          </div>
           <div>“{{ t.quote }}”</div>
         </article>
       {% empty %}

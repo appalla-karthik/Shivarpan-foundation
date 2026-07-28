@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import TestimonialsCarousel from "@/components/TestimonialsCarousel";
@@ -12,6 +12,14 @@ beforeAll(() => {
       disconnect() {}
     },
   );
+  Object.defineProperty(HTMLMediaElement.prototype, "play", {
+    configurable: true,
+    value: vi.fn().mockResolvedValue(undefined),
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, "pause", {
+    configurable: true,
+    value: vi.fn(),
+  });
   vi.stubGlobal(
     "IntersectionObserver",
     class {
@@ -36,6 +44,7 @@ describe("TestimonialsCarousel", () => {
             tag: "Community",
             monogram: "RP",
             glow: "from-primary/20 to-transparent",
+            rating: 4,
             media: null,
             isVideoReview: false,
           },
@@ -45,6 +54,43 @@ describe("TestimonialsCarousel", () => {
 
     expect(screen.getByText(/A genuine community review\./)).toBeInTheDocument();
     expect(screen.getByText("Review Person")).toBeInTheDocument();
+    expect(screen.getByLabelText("4 out of 5 stars")).toBeInTheDocument();
+  });
+
+  it("switches a video testimonial from its review overlay to full-card playback", async () => {
+    render(
+      <TestimonialsCarousel
+        items={[
+          {
+            quote: "The field team made a visible difference.",
+            name: "Video Reviewer",
+            role: "Community Partner",
+            tag: "Partner",
+            monogram: "VR",
+            glow: "from-primary/20 to-transparent",
+            rating: 3,
+            media: {
+              url: "/testimonial.mp4",
+              media_type: "video",
+            },
+            isVideoReview: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByLabelText("3 out of 5 stars")).toBeInTheDocument();
+    const playButton = screen.getByRole("button", {
+      name: "Play Video Reviewer testimonial video",
+    });
+    const video = screen.getByLabelText("Video Reviewer testimonial video");
+
+    expect(video).not.toHaveAttribute("controls");
+    fireEvent.click(playButton);
+
+    await waitFor(() => expect(video).toHaveAttribute("controls"));
+    fireEvent.pause(video);
+    expect(video).toHaveAttribute("controls");
   });
 
   it("handles a missing runtime items value without crashing", () => {

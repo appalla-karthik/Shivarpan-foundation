@@ -331,7 +331,17 @@ class TestimonialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Testimonial
-        fields = ["id", "name", "designation", "organization", "quote", "photo", "media", "created_at"]
+        fields = [
+            "id",
+            "name",
+            "designation",
+            "organization",
+            "quote",
+            "rating",
+            "photo",
+            "media",
+            "created_at",
+        ]
 
 
 class TeamMemberSerializer(serializers.ModelSerializer):

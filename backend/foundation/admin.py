@@ -466,6 +466,7 @@ class TestimonialAdmin(admin.ModelAdmin):
         "name",
         "organization",
         "designation",
+        "rating",
         "review_format",
         "is_approved",
         "is_hidden",
@@ -483,6 +484,7 @@ class TestimonialAdmin(admin.ModelAdmin):
                     "designation",
                     "organization",
                     "quote",
+                    "rating",
                     "is_approved",
                     "is_hidden",
                 )

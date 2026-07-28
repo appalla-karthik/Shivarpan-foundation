@@ -207,10 +207,22 @@ class MagazineStory(PublishableModel, SeoFields):
 
 
 class Testimonial(TimeStampedModel):
+    class Rating(models.IntegerChoices):
+        ONE = 1, "1 star"
+        TWO = 2, "2 stars"
+        THREE = 3, "3 stars"
+        FOUR = 4, "4 stars"
+        FIVE = 5, "5 stars"
+
     name = models.CharField(max_length=255)
     designation = models.CharField(max_length=255, blank=True)
     organization = models.CharField(max_length=255, blank=True)
     quote = models.TextField()
+    rating = models.PositiveSmallIntegerField(
+        choices=Rating.choices,
+        default=Rating.FIVE,
+        help_text="Select the exact star rating given by this reviewer.",
+    )
     photo = models.ForeignKey(
         MediaAsset, null=True, blank=True, on_delete=models.SET_NULL, related_name="testimonial_photos"
     )

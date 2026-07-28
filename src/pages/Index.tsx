@@ -238,6 +238,7 @@ type TestimonialPayload = {
   designation: string;
   organization: string;
   quote: string;
+  rating: number;
   photo: MediaAsset | null;
   media: MediaAsset | null;
 };
@@ -633,6 +634,7 @@ const Index = () => {
           tag: item.organization || "Partner",
           monogram: initials,
           glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
+          rating: Math.min(5, Math.max(1, Math.round(Number(item.rating) || 5))),
           photoUrl: assetUrl(item.photo?.url),
           media: testimonialMedia
             ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
@@ -647,8 +649,18 @@ const Index = () => {
       media: null,
       photoUrl: undefined,
       isVideoReview: false,
+      rating: 5,
     }));
   }, [homepage, testimonialItems]);
+
+  const testimonialAverageRating = useMemo(() => {
+    if (!testimonialsToShow.length) return 0;
+    const ratingTotal = testimonialsToShow.reduce(
+      (total, item) => total + item.rating,
+      0,
+    );
+    return ratingTotal / testimonialsToShow.length;
+  }, [testimonialsToShow]);
 
   return (
     <div className="overflow-hidden">
@@ -1628,7 +1640,7 @@ const Index = () => {
                   </p>
                 </div>
                 <div className="rounded-full border border-border/80 bg-card/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  4.9/5 Partner Rating
+                  {testimonialAverageRating.toFixed(1)}/5 Partner Rating
                 </div>
               </div>
             </AnimatedSection>

@@ -31,6 +31,7 @@ class TestimonialMediaTests(TestCase):
                 "designation": "Volunteer",
                 "organization": "Community",
                 "quote": "A genuine video review.",
+                "rating": 4,
                 "is_approved": True,
                 "is_hidden": False,
             },
@@ -73,6 +74,7 @@ class TestimonialMediaTests(TestCase):
         Testimonial.objects.create(
             name="Approved Reviewer",
             quote="The work created a meaningful impact.",
+            rating=3,
             media=video_asset,
             is_approved=True,
         )
@@ -83,6 +85,19 @@ class TestimonialMediaTests(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["media"]["media_type"], "video")
         self.assertTrue(response.data[0]["media"]["url"].endswith(".webm"))
+        self.assertEqual(response.data[0]["rating"], 3)
+
+    def test_rating_must_be_between_one_and_five(self):
+        testimonial = Testimonial(
+            name="Invalid Rating",
+            quote="Invalid rating review.",
+            rating=6,
+        )
+
+        with self.assertRaises(ValidationError) as raised:
+            testimonial.full_clean()
+
+        self.assertIn("rating", raised.exception.message_dict)
 
     def test_non_image_or_video_media_is_rejected(self):
         document_asset = MediaAsset.objects.create(
