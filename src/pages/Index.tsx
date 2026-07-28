@@ -158,36 +158,6 @@ const partners = [
 
 const partnerRowOne = [...partners, ...partners];
 
-const testimonials = [
-  {
-    quote:
-      "Shivarpan Foundation's execution speed and transparency earned our trust. The ground teams shared real-time updates, which kept CSR delivery smooth.",
-    name: "Meera Kulkarni",
-    role: "CSR Lead, Sahyog CSR Collective",
-    tag: "CSR Partner",
-    monogram: "MK",
-    glow: "from-accent/20 via-primary/10 to-transparent",
-  },
-  {
-    quote:
-      "Volunteer coordination was so strong that outreach targets were achieved ahead of time. The difference in community impact is clearly visible.",
-    name: "Ankit Rao",
-    role: "Volunteer Coordinator, Udaan Youth Council",
-    tag: "Volunteer Network",
-    monogram: "AR",
-    glow: "from-primary/20 via-accent/10 to-transparent",
-  },
-  {
-    quote:
-      "During the education kit drive, last-mile delivery and beneficiary tracking were top-class. The team's commitment is outstanding.",
-    name: "Ritu Sharma",
-    role: "Program Manager, Aarambh Education Trust",
-    tag: "Education Partner",
-    monogram: "RS",
-    glow: "from-accent/20 via-primary/10 to-transparent",
-  },
-];
-
 type MediaAsset = {
   id: number;
   title: string;
@@ -424,6 +394,7 @@ const Index = () => {
 
     void Promise.all([
       loadHomepage(),
+      loadTestimonials(),
       loadProjects(),
       loadUpcomingEvents(),
       loadImpactVideos(),
@@ -433,7 +404,6 @@ const Index = () => {
 
     const nonCriticalDataTimer = window.setTimeout(() => {
       Promise.all([
-        loadTestimonials(),
         loadGallery(),
         loadStoryItems(),
       ]).catch((error) => {
@@ -616,41 +586,31 @@ const Index = () => {
       return [];
     }
 
-    if (testimonialItems.length) {
-      return testimonialItems.map((item, index) => {
-        const testimonialMedia = item.media || item.photo;
-        const initials =
-          item.name
-            ?.split(" ")
-            .map((word) => word[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase() || "SP";
+    return testimonialItems.map((item, index) => {
+      const testimonialMedia = item.media || item.photo;
+      const initials =
+        item.name
+          ?.split(" ")
+          .map((word) => word[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "SP";
 
-        return {
-          quote: item.quote,
-          name: item.name,
-          role: [item.designation, item.organization].filter(Boolean).join(", "),
-          tag: item.organization || "Partner",
-          monogram: initials,
-          glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
-          rating: Math.min(5, Math.max(1, Math.round(Number(item.rating) || 5))),
-          photoUrl: assetUrl(item.photo?.url),
-          media: testimonialMedia
-            ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
-            : null,
-          isVideoReview: isVideoMedia(testimonialMedia),
-        };
-      });
-    }
-
-    return testimonials.map((item) => ({
-      ...item,
-      media: null,
-      photoUrl: undefined,
-      isVideoReview: false,
-      rating: 5,
-    }));
+      return {
+        quote: item.quote,
+        name: item.name,
+        role: [item.designation, item.organization].filter(Boolean).join(", "),
+        tag: item.organization || "Partner",
+        monogram: initials,
+        glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
+        rating: Math.min(5, Math.max(1, Math.round(Number(item.rating) || 5))),
+        photoUrl: assetUrl(item.photo?.url),
+        media: testimonialMedia
+          ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
+          : null,
+        isVideoReview: isVideoMedia(testimonialMedia),
+      };
+    });
   }, [homepage, testimonialItems]);
 
   const testimonialAverageRating = useMemo(() => {
