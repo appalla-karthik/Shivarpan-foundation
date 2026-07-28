@@ -57,5 +57,19 @@ describe("FeaturedVideoTeaser", () => {
         screen.getByRole("heading", { name: "Second field story", level: 3 }),
       ).toBeInTheDocument(),
     );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play Second field story" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Second field story" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close video" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Second field story" }),
+      ).not.toBeInTheDocument(),
+    );
   });
 });
