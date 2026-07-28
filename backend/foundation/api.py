@@ -88,6 +88,15 @@ def mask_pan(value: str) -> str:
     return f"******{normalized[-4:]}"
 
 
+def _is_image_asset(asset: MediaAsset) -> bool:
+    filename = (asset.file_name or getattr(asset.file, "name", "") or "").lower()
+    return (
+        asset.media_type == MediaAsset.MediaType.IMAGE
+        or (asset.content_type or "").lower().startswith("image/")
+        or filename.endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))
+    )
+
+
 def _media_asset_source(asset: MediaAsset) -> tuple[bytes, str, str]:
     filename = asset.file_name or f"media-{asset.pk}"
     content_type = (
@@ -128,7 +137,7 @@ def _media_asset_response(
 
     if request.headers.get("If-None-Match") == etag:
         response = HttpResponse(status=304)
-    elif width and asset.media_type == MediaAsset.MediaType.IMAGE:
+    elif width and _is_image_asset(asset):
         cache_key = f"media-variant:{asset.pk}:{version}:{width}:{quality}"
         optimized = cache.get(cache_key)
         if optimized is None:
@@ -177,7 +186,7 @@ class MediaAssetSerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         if not getattr(obj, "file", None) and not obj.file_blob:
             return ""
-        if obj.media_type == MediaAsset.MediaType.IMAGE:
+        if _is_image_asset(obj):
             path = reverse("mediaasset-file", kwargs={"pk": obj.pk})
             version = int(obj.updated_at.timestamp()) if obj.updated_at else 0
             path = f"{path}?v={version}"
@@ -485,9 +494,8 @@ class GalleryItemSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "category", "image"]
 
     def get_image(self, obj):
-        request = self.context.get("request")
         if obj.image:
-            return obj.image.public_url(request)
+            return MediaAssetSerializer(obj.image, context=self.context).data["url"]
         return None
 
 
@@ -664,8 +672,8 @@ class HomepageHeroImageAPIView(generics.GenericAPIView):
         return _media_asset_response(
             request,
             asset,
-            width=1600,
-            quality=80,
+            width=1280,
+            quality=72,
             immutable=False,
         )
 

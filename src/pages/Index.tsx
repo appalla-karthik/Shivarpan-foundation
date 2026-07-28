@@ -299,6 +299,22 @@ const Index = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventPayload[]>([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroMediaReady, setHeroMediaReady] = useState(false);
+  const [showHomepageContent, setShowHomepageContent] = useState(false);
+
+  useEffect(() => {
+    const revealContent = () => setShowHomepageContent(true);
+    const timerId = window.setTimeout(revealContent, 12000);
+    const events: Array<keyof WindowEventMap> = ["scroll", "wheel", "touchstart", "keydown"];
+
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, revealContent, { passive: true, once: true });
+    });
+
+    return () => {
+      window.clearTimeout(timerId);
+      events.forEach((eventName) => window.removeEventListener(eventName, revealContent));
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -332,7 +348,7 @@ const Index = () => {
           setGalleryItems(
             data.map((item) => ({
               ...item,
-              image: assetUrl(item.image),
+              image: optimizedImageUrl(item.image, 960, 74),
             })),
           );
         }
@@ -348,7 +364,7 @@ const Index = () => {
           setStoryItems(
             data.map((item) => ({
               ...item,
-              image: assetUrl(item.image),
+              image: optimizedImageUrl(item.image, 720, 74),
             })),
           );
         }
@@ -654,34 +670,28 @@ const Index = () => {
           }
 
           const isVideo = isVideoMedia(slide);
-          const sharedMotionProps = {
-            initial: false,
-            animate: {
-              opacity: index === activeHeroSlide ? 1 : 0,
-              scale: index === activeHeroSlide ? 1.04 : 1,
-            },
-            transition: { duration: 1.15, ease: "easeInOut" as const },
-            className: "absolute inset-0 h-full w-full object-cover brightness-[0.94] contrast-[1.08] saturate-[1.06]",
-          };
+          const sharedClassName = `absolute inset-0 h-full w-full object-cover brightness-[0.94] contrast-[1.08] saturate-[1.06] transition-[opacity,transform] duration-1000 ease-out ${
+            index === activeHeroSlide ? "scale-[1.04] opacity-100" : "scale-100 opacity-0"
+          }`;
 
           if (isVideo) {
             return (
-              <motion.video
+              <video
                 key={`${slide.url}-${index}`}
                 src={slide.url}
-                autoPlay
+                autoPlay={index === activeHeroSlide}
                 muted
                 loop
                 playsInline
                 preload={index === activeHeroSlide ? "auto" : "metadata"}
                 aria-label={slide.alt_text || slide.title || "Shivarpan Foundation video"}
-                {...sharedMotionProps}
+                className={sharedClassName}
               />
             );
           }
 
           return (
-            <motion.img
+            <img
               key={`${slide.url}-${index}`}
               src={slide.url}
               alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
@@ -690,7 +700,7 @@ const Index = () => {
               fetchPriority={index === 0 ? "high" : "low"}
               width={1800}
               height={1013}
-              {...sharedMotionProps}
+              className={sharedClassName}
             />
           );
         })}
@@ -892,6 +902,8 @@ const Index = () => {
 
       </section>
 
+      {showHomepageContent ? (
+      <>
       {/* Recent Projects - Impact Dashboard */}
       <section className="relative overflow-hidden py-16 md:py-24">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,hsl(var(--primary)/0.1),transparent_40%),radial-gradient(circle_at_86%_80%,hsl(var(--accent)/0.12),transparent_42%)]" />
@@ -1772,6 +1784,13 @@ const Index = () => {
           </AnimatedSection>
         </div>
       </section>
+      </>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)/0.28),hsl(var(--background)))]"
+        />
+      )}
     </div>
   );
 };
