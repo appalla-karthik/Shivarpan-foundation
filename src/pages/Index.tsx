@@ -550,15 +550,17 @@ const Index = () => {
     [storyItems],
   );
 
-  const featuredImpactVideo = useMemo(
-    () =>
-      [...impactVideos].sort(
-        (a, b) =>
-          Number(b.is_featured) - Number(a.is_featured) ||
-          a.sort_order - b.sort_order,
-      )[0],
-    [impactVideos],
-  );
+  const featuredImpactVideos = useMemo(() => {
+    const orderedVideos = [...impactVideos].sort(
+      (a, b) =>
+        Number(b.is_featured) - Number(a.is_featured) ||
+        a.sort_order - b.sort_order,
+    );
+    const explicitlyFeatured = orderedVideos.filter((video) => video.is_featured);
+    return explicitlyFeatured.length > 0
+      ? explicitlyFeatured
+      : orderedVideos.slice(0, 1);
+  }, [impactVideos]);
 
   const normalizedRecentProjects = useMemo(
     () => mapRecentProjectsFromApi(projectItems),
@@ -1430,8 +1432,8 @@ const Index = () => {
         </div>
       </section>
 
-      {featuredImpactVideo ? (
-        <FeaturedVideoTeaser video={featuredImpactVideo} />
+      {featuredImpactVideos.length > 0 ? (
+        <FeaturedVideoTeaser videos={featuredImpactVideos} />
       ) : null}
 
       {/* Stories */}
