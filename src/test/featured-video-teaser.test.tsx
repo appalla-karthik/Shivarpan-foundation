@@ -93,6 +93,10 @@ describe("FeaturedVideoTeaser", () => {
       name: "Play Second field story",
     });
     expect(centeredPlayButton).toHaveClass("inset-x-0", "mx-auto");
+    expect(centeredPlayButton.closest("[data-playing]")).toHaveClass(
+      "w-full",
+      "max-w-full",
+    );
     fireEvent.click(centeredPlayButton);
 
     await waitFor(() =>

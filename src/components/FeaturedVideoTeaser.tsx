@@ -274,7 +274,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
 
           <div className="overflow-hidden rounded-[1.6rem] border border-[#123f50]/40 bg-[#061f2b] shadow-[0_38px_90px_-48px_rgba(4,31,43,0.9)] sm:rounded-[2rem] md:rounded-[2.5rem]">
             <div
-              className="group relative aspect-[4/5] min-h-[34rem] overflow-hidden bg-[#061f2b] sm:aspect-[4/3] sm:min-h-[620px] lg:aspect-video lg:min-h-0"
+              className="group relative aspect-[4/5] min-h-[34rem] w-full min-w-0 max-w-full overflow-hidden bg-[#061f2b] sm:aspect-[4/3] sm:min-h-[620px] lg:aspect-video lg:min-h-0"
               data-playing={isPlaying ? "true" : "false"}
             >
               <AnimatePresence mode="wait">
