@@ -48,10 +48,37 @@ PY
 "$PYTHON" "$BACKEND_ROOT/manage.py" collectstatic --noinput
 "$PYTHON" "$BACKEND_ROOT/manage.py" check --deploy
 
+install -m 644 \
+  "$APP_ROOT/deploy/nginx_performance.conf" \
+  "/etc/nginx/conf.d/shivarpan-performance.conf"
+
+NGINX_SITE_LINK="/etc/nginx/sites-enabled/shivarpan"
+NGINX_SITE_CONFIG="$(readlink -f -- "$NGINX_SITE_LINK")"
+case "$NGINX_SITE_CONFIG" in
+  /etc/nginx/*) ;;
+  *)
+    echo "Refusing to edit unexpected nginx site path: $NGINX_SITE_CONFIG" >&2
+    exit 1
+    ;;
+esac
+test -f "$NGINX_SITE_CONFIG"
+
+if ! grep -Eq '^[[:space:]]*listen[[:space:]]+443[[:space:]]+ssl[[:space:]]+http2;' "$NGINX_SITE_CONFIG"; then
+  nginx -V 2>&1 | grep -q -- '--with-http_v2_module'
+  NGINX_SITE_BACKUP="$BACKUP_ROOT/nginx-shivarpan-$(date -u +%Y%m%dT%H%M%SZ).conf"
+  cp --preserve=mode,ownership,timestamps "$NGINX_SITE_CONFIG" "$NGINX_SITE_BACKUP"
+  sed -i -E \
+    's/^([[:space:]]*listen[[:space:]]+443[[:space:]]+ssl);/\1 http2;/' \
+    "$NGINX_SITE_CONFIG"
+  grep -Eq '^[[:space:]]*listen[[:space:]]+443[[:space:]]+ssl[[:space:]]+http2;' "$NGINX_SITE_CONFIG"
+fi
+
+nginx -t
+
 systemctl restart django
 sleep 3
 systemctl is-active --quiet django
-nginx -t
+systemctl reload nginx
 
 curl --fail --silent --show-error --output /dev/null \
   "https://shivarpanfoundation.org/"

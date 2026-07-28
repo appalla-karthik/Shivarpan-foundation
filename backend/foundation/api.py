@@ -1,17 +1,21 @@
 from __future__ import annotations
+from io import BytesIO
 import json
 import mimetypes
 import re
 import uuid
 
 from foundation.models import GalleryItem
+from PIL import Image, ImageOps
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.images import get_image_dimensions
 from django.db import IntegrityError, transaction
 from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
 from django.db.models import BigIntegerField, Count, F, Max, Q, Sum, Value
 from django.db.models.functions import Coalesce
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 from rest_framework import generics, parsers, serializers, viewsets
@@ -84,6 +88,85 @@ def mask_pan(value: str) -> str:
     return f"******{normalized[-4:]}"
 
 
+def _media_asset_source(asset: MediaAsset) -> tuple[bytes, str, str]:
+    filename = asset.file_name or f"media-{asset.pk}"
+    content_type = (
+        asset.content_type
+        or mimetypes.guess_type(filename)[0]
+        or "application/octet-stream"
+    )
+
+    if asset.file_blob:
+        return bytes(asset.file_blob), content_type, filename
+
+    if asset.file:
+        try:
+            asset.file.open("rb")
+            return asset.file.read(), content_type, filename
+        except (FileNotFoundError, OSError, ValueError) as exc:
+            raise Http404("Media file not found.") from exc
+        finally:
+            try:
+                asset.file.close()
+            except Exception:
+                pass
+
+    raise Http404("Media file not found.")
+
+
+def _media_asset_response(
+    request,
+    asset: MediaAsset,
+    *,
+    width: int | None = None,
+    quality: int = 78,
+    immutable: bool = False,
+) -> HttpResponse:
+    version = int(asset.updated_at.timestamp()) if asset.updated_at else 0
+    etag = f'"media-{asset.pk}-{version}-{width or 0}-{quality}"'
+    filename = asset.file_name or f"media-{asset.pk}"
+
+    if request.headers.get("If-None-Match") == etag:
+        response = HttpResponse(status=304)
+    elif width and asset.media_type == MediaAsset.MediaType.IMAGE:
+        cache_key = f"media-variant:{asset.pk}:{version}:{width}:{quality}"
+        optimized = cache.get(cache_key)
+        if optimized is None:
+            source, content_type, filename = _media_asset_source(asset)
+            try:
+                with Image.open(BytesIO(source)) as original:
+                    image = ImageOps.exif_transpose(original)
+                    image.thumbnail((width, width * 2), Image.Resampling.LANCZOS)
+                    if image.mode not in ("RGB", "RGBA"):
+                        image = image.convert("RGBA" if "transparency" in image.info else "RGB")
+                    output = BytesIO()
+                    image.save(output, format="WEBP", quality=quality, method=6)
+                    optimized = output.getvalue()
+                    cache.set(cache_key, optimized, timeout=86400)
+            except (OSError, ValueError):
+                response = HttpResponse(source, content_type=content_type)
+            else:
+                response = HttpResponse(optimized, content_type="image/webp")
+        else:
+            response = HttpResponse(optimized, content_type="image/webp")
+
+        if response["Content-Type"] == "image/webp":
+            filename = f"{filename.rsplit('.', 1)[0]}.webp"
+    else:
+        source, content_type, filename = _media_asset_source(asset)
+        response = HttpResponse(source, content_type=content_type)
+
+    response["ETag"] = etag
+    response["Cache-Control"] = (
+        "public, max-age=31536000, immutable"
+        if immutable
+        else "public, max-age=604800, stale-while-revalidate=86400"
+    )
+    response["Content-Disposition"] = f'inline; filename="{filename.replace(chr(34), "")}"'
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 class MediaAssetSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
 
@@ -94,6 +177,12 @@ class MediaAssetSerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         if not getattr(obj, "file", None) and not obj.file_blob:
             return ""
+        if obj.media_type == MediaAsset.MediaType.IMAGE:
+            path = reverse("mediaasset-file", kwargs={"pk": obj.pk})
+            version = int(obj.updated_at.timestamp()) if obj.updated_at else 0
+            path = f"{path}?v={version}"
+            request = self.context.get("request")
+            return request.build_absolute_uri(path) if request else path
         return obj.public_url(self.context.get("request"))
 
 
@@ -545,27 +634,40 @@ class MediaAssetFileAPIView(generics.GenericAPIView):
         if not asset:
             raise Http404("Media asset not found.")
 
-        if asset.file_blob:
-            guessed_content_type = mimetypes.guess_type(asset.file_name or "")[0]
-            content_type = guessed_content_type or "application/octet-stream"
-            response = HttpResponse(
-                asset.file_blob,
-                content_type=content_type,
-            )
-            filename = asset.file_name or f"media-{asset.pk}"
-            response["Content-Disposition"] = f'inline; filename="{filename}"'
-            response["Content-Security-Policy"] = (
-                "sandbox; default-src 'none'; style-src 'unsafe-inline'"
-            )
-            return response
+        requested_width = request.query_params.get("w")
+        requested_quality = request.query_params.get("q")
+        try:
+            width = min(1920, max(32, int(requested_width))) if requested_width else None
+            quality = min(90, max(40, int(requested_quality or 78)))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Invalid image width or quality.") from exc
 
-        if asset.file:
-            try:
-                return Response({"url": request.build_absolute_uri(asset.file.url)})
-            except Exception as exc:
-                raise Http404("Media file not found.") from exc
+        return _media_asset_response(
+            request,
+            asset,
+            width=width,
+            quality=quality,
+            immutable=bool(request.query_params.get("v")),
+        )
 
-        raise Http404("Media file not found.")
+
+class HomepageHeroImageAPIView(generics.GenericAPIView):
+    def get(self, request):
+        homepage = Homepage.get_solo()
+        first_slide = homepage.hero_slider_images.filter(
+            media_type=MediaAsset.MediaType.IMAGE
+        ).first()
+        asset = first_slide or homepage.hero_background_image
+        if not asset or asset.media_type != MediaAsset.MediaType.IMAGE:
+            raise Http404("Homepage hero image not found.")
+
+        return _media_asset_response(
+            request,
+            asset,
+            width=1600,
+            quality=80,
+            immutable=False,
+        )
 
 
 class PageViewSet(PublicPublishedOnlyMixin, viewsets.ReadOnlyModelViewSet):
@@ -707,6 +809,7 @@ class HomepageAPIView(generics.GenericAPIView):
             "hero_slider_images": MediaAssetSerializer(
                 homepage.hero_slider_images.all(), many=True, context={"request": request}
             ).data,
+            "hero_preload_url": request.build_absolute_uri(reverse("homepage-hero-image")),
             "hero_cta_text": homepage.hero_cta_text,
             "hero_cta_url": homepage.hero_cta_url,
             "featured_article": ArticleSerializer(homepage.featured_article, context={"request": request}).data
@@ -721,7 +824,9 @@ class HomepageAPIView(generics.GenericAPIView):
             "show_testimonials": homepage.show_testimonials,
             "sections": HomepageSectionSerializer(sections_qs, many=True, context={"request": request}).data,
         }
-        return Response(data)
+        response = Response(data)
+        response["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+        return response
 
 
 class ContactSubmissionSerializer(serializers.ModelSerializer):

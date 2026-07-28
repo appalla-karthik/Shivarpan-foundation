@@ -73,6 +73,14 @@ class RichTextAdminMixin:
 
 
 class TestimonialAdminForm(forms.ModelForm):
+    profile_photo_upload = forms.FileField(
+        required=False,
+        label="Upload reviewer profile photo",
+        help_text=(
+            "Optional. Upload a JPEG, PNG, or WebP image up to 10 MB. "
+            "This replaces the initials circle beside the reviewer's name."
+        ),
+    )
     review_upload = forms.FileField(
         required=False,
         label="Upload new testimonial image or video",
@@ -85,6 +93,25 @@ class TestimonialAdminForm(forms.ModelForm):
     class Meta:
         model = Testimonial
         fields = "__all__"
+
+    def clean_profile_photo_upload(self):
+        uploaded = self.cleaned_data.get("profile_photo_upload")
+        if not uploaded:
+            return uploaded
+
+        file_name = (uploaded.name or "").lower()
+        if not file_name.endswith((".jpg", ".jpeg", ".png", ".webp")):
+            raise ValidationError("Upload a JPEG, PNG, or WebP profile photo.")
+        if uploaded.size > 10 * 1024 * 1024:
+            raise ValidationError("Reviewer profile photos must be 10 MB or smaller.")
+        try:
+            width, height = get_image_dimensions(uploaded)
+            uploaded.seek(0)
+        except Exception as exc:
+            raise ValidationError("The reviewer profile photo is not valid.") from exc
+        if not width or not height:
+            raise ValidationError("The reviewer profile photo is not valid.")
+        return uploaded
 
     def clean_review_upload(self):
         uploaded = self.cleaned_data.get("review_upload")
@@ -130,6 +157,11 @@ class TestimonialAdminForm(forms.ModelForm):
             self.add_error(
                 "review_upload",
                 "Choose either a new upload or an existing Media Asset, not both.",
+            )
+        if cleaned_data.get("profile_photo_upload") and cleaned_data.get("photo"):
+            self.add_error(
+                "profile_photo_upload",
+                "Choose either a new reviewer photo or an existing Media Asset, not both.",
             )
         return cleaned_data
 
@@ -495,10 +527,19 @@ class TestimonialAdmin(admin.ModelAdmin):
             {
                 "description": (
                     "Upload a new review image/video directly, or select an existing "
-                    "Media Asset. Profile photo is optional and remains visible beside "
-                    "the person's name."
+                    "Media Asset."
                 ),
-                "fields": ("review_upload", "media", "photo"),
+                "fields": ("review_upload", "media"),
+            },
+        ),
+        (
+            "Reviewer profile photo",
+            {
+                "description": (
+                    "Upload the reviewer's photo directly, or select an existing image "
+                    "Media Asset. If empty, the reviewer's initials are shown."
+                ),
+                "fields": ("profile_photo_upload", "photo"),
             },
         ),
     )
@@ -511,6 +552,17 @@ class TestimonialAdmin(admin.ModelAdmin):
         return review_media.get_media_type_display()
 
     def save_model(self, request, obj, form, change):
+        profile_photo = form.cleaned_data.get("profile_photo_upload")
+        if profile_photo:
+            photo_asset = MediaAsset(
+                title=f"{obj.name} profile photo",
+                category="Testimonials",
+                file=profile_photo,
+                alt_text=f"{obj.name} profile photo",
+            )
+            photo_asset.save()
+            obj.photo = photo_asset
+
         uploaded = form.cleaned_data.get("review_upload")
         if uploaded:
             media_asset = MediaAsset(

@@ -41,7 +41,7 @@ import {
   type RecentProject,
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
-import { assetUrl, getJson, reportApiError } from "@/lib/api";
+import { assetUrl, getJson, optimizedImageUrl, reportApiError } from "@/lib/api";
 import type { ImpactVideoPayload } from "@/types/content";
 
 const ImpactCounter = lazy(() => import("@/components/ImpactCounter"));
@@ -196,6 +196,7 @@ type HomepagePayload = {
   hero_subtitle: string;
   hero_background_image: MediaAsset | null;
   hero_slider_images: MediaAsset[];
+  hero_preload_url?: string;
   hero_cta_text: string;
   hero_cta_url: string;
   partner_logos: MediaAsset[];
@@ -372,7 +373,7 @@ const Index = () => {
 
     const loadProjects = async () => {
       try {
-        const data = await getJson<ProjectPayload[]>("projects/", { cache: false });
+        const data = await getJson<ProjectPayload[]>("projects/", { cache: true, cacheTTL: 60 * 1000 });
         if (isMounted) {
           setProjectItems(data);
         }
@@ -392,15 +393,19 @@ const Index = () => {
       }
     };
 
-    void Promise.all([
-      loadHomepage(),
-      loadTestimonials(),
-      loadProjects(),
-      loadUpcomingEvents(),
-      loadImpactVideos(),
-    ]).catch((error) => {
-      console.error("Error loading priority homepage data:", error);
-    });
+    void loadHomepage();
+
+    const projectsTimer = window.setTimeout(() => {
+      void loadProjects();
+    }, 500);
+
+    const secondaryDataTimer = window.setTimeout(() => {
+      void Promise.all([
+        loadTestimonials(),
+        loadUpcomingEvents(),
+        loadImpactVideos(),
+      ]);
+    }, 1800);
 
     const nonCriticalDataTimer = window.setTimeout(() => {
       Promise.all([
@@ -409,10 +414,12 @@ const Index = () => {
       ]).catch((error) => {
         console.error("Error loading non-critical data:", error);
       });
-    }, 12000);
+    }, 6000);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(projectsTimer);
+      window.clearTimeout(secondaryDataTimer);
       window.clearTimeout(nonCriticalDataTimer);
     };
   }, []);
@@ -434,9 +441,13 @@ const Index = () => {
     const uploadedSlides =
       homepage?.hero_slider_images
         ?.filter((image) => image.url)
-        .map((image) => ({
+        .map((image, index) => ({
           ...image,
-          url: assetUrl(image.url),
+          sourceUrl: assetUrl(image.url),
+          url:
+            index === 0 && homepage?.hero_preload_url
+              ? assetUrl(homepage.hero_preload_url)
+              : optimizedImageUrl(image.url, 1600, 80),
         })) ?? [];
 
     if (uploadedSlides.length > 0) {
@@ -447,7 +458,10 @@ const Index = () => {
       return [
         {
           ...homepage!.hero_background_image!,
-          url: heroImageSrc,
+          sourceUrl: heroImageSrc,
+          url: homepage?.hero_preload_url
+            ? assetUrl(homepage.hero_preload_url)
+            : optimizedImageUrl(heroImageSrc, 1600, 80),
         },
       ];
     }
@@ -495,7 +509,7 @@ const Index = () => {
         return {
           ...fallback,
           name: logo.title || fallback.name,
-          logoUrl: assetUrl(logo.url),
+          logoUrl: optimizedImageUrl(logo.url, 360, 80),
           logoWidth: "logoWidth" in fallback ? fallback.logoWidth : undefined,
           logoHeight: "logoHeight" in fallback ? fallback.logoHeight : undefined,
         };
@@ -606,9 +620,14 @@ const Index = () => {
         monogram: initials,
         glow: index % 2 === 0 ? "from-accent/20 via-primary/10 to-transparent" : "from-primary/20 via-accent/10 to-transparent",
         rating: Math.min(5, Math.max(1, Math.round(Number(item.rating) || 5))),
-        photoUrl: assetUrl(item.photo?.url),
+        photoUrl: optimizedImageUrl(item.photo?.url, 96, 78),
         media: testimonialMedia
-          ? { ...testimonialMedia, url: assetUrl(testimonialMedia.url) }
+          ? {
+              ...testimonialMedia,
+              url: isVideoMedia(testimonialMedia)
+                ? assetUrl(testimonialMedia.url)
+                : optimizedImageUrl(testimonialMedia.url, 720, 78),
+            }
           : null,
         isVideoReview: isVideoMedia(testimonialMedia),
       };
@@ -667,7 +686,8 @@ const Index = () => {
               src={slide.url}
               alt={slide.alt_text || slide.title || "Shivarpan Foundation"}
               loading={index === 0 ? "eager" : "lazy"}
-              decoding={index === 0 ? "sync" : "async"}
+              decoding="async"
+              fetchPriority={index === 0 ? "high" : "low"}
               width={1800}
               height={1013}
               {...sharedMotionProps}
@@ -680,25 +700,19 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/18 via-transparent to-foreground/72" />
         <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_85%_28%,hsl(var(--accent)/0.18),transparent_58%)]" />
 
-        <motion.div
-          animate={{ x: [0, 18, 0], y: [0, -12, 0], opacity: [0.2, 0.45, 0.2] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        <div
           className="absolute -top-16 right-8 w-72 h-72 md:w-80 md:h-80 rounded-full bg-accent/25 blur-3xl"
         />
-        <motion.div
-          animate={{ x: [0, -22, 0], y: [0, 14, 0], opacity: [0.15, 0.35, 0.15] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        <div
           className="absolute bottom-8 left-1/4 w-60 h-60 md:w-72 md:h-72 rounded-full bg-primary/20 blur-3xl"
         />
         <div className="pointer-events-none absolute inset-0">
           {heroParticles.map((particle) => (
-            <motion.span
+            <span
               key={`${particle.left}-${particle.top}`}
               aria-hidden
               style={{ left: particle.left, top: particle.top }}
-              animate={{ y: [0, -14, 0], opacity: [0.2, 0.85, 0.2], scale: [1, 1.25, 1] }}
-              transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: particle.delay }}
-              className={`absolute rounded-full bg-primary-foreground/75 ${particle.size}`}
+              className={`absolute rounded-full bg-primary-foreground/55 ${particle.size}`}
             />
           ))}
         </div>
@@ -776,20 +790,9 @@ const Index = () => {
                   className="group relative overflow-hidden rounded-2xl border border-primary-foreground/22 bg-foreground/52 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(0,0,0,0.95)] backdrop-blur-lg"
                 >
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/15 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <motion.div
-                    aria-hidden
-                    animate={{ x: ["-120%", "130%"] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 1.2, ease: "linear", delay: index * 0.25 }}
-                    className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-primary-foreground/35 to-transparent"
-                  />
                   <p className="relative text-xl font-bold text-primary-foreground sm:text-2xl">{stat.value}</p>
                   <p className="relative text-xs uppercase tracking-wider text-primary-foreground/80">{stat.label}</p>
-                  <motion.div
-                    aria-hidden
-                    animate={{ width: ["0%", "100%", "0%"] }}
-                    transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.18, ease: "easeInOut" }}
-                    className="relative mt-2 h-0.5 rounded-full bg-accent/85"
-                  />
+                  <div aria-hidden className="relative mt-2 h-0.5 w-2/5 rounded-full bg-accent/85" />
                 </motion.div>
               ))}
             </motion.div>
@@ -870,7 +873,7 @@ const Index = () => {
                       </span>
                     ) : (
                       <img
-                        src={thumbnailUrl || slide.url}
+                        src={thumbnailUrl || optimizedImageUrl((slide as { sourceUrl?: string }).sourceUrl || slide.url, 160, 70)}
                         alt=""
                         width={96}
                         height={56}
@@ -970,7 +973,7 @@ const Index = () => {
                 <div className="relative grid lg:grid-cols-5">
                   <div className="relative min-h-[22rem] overflow-hidden lg:col-span-2">
                     <img
-                      src={featuredProject.image}
+                      src={optimizedImageUrl(featuredProject.image, 800, 78)}
                       alt={featuredProject.title}
                       width={720}
                       height={720}
@@ -1075,11 +1078,11 @@ const Index = () => {
                       <div className="relative flex gap-4">
                         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/70 shadow-[0_18px_44px_-32px_hsl(var(--foreground))]">
                           <img
-                            src={getSmallProjectImage(project.image)}
+                            src={optimizedImageUrl(getSmallProjectImage(project.image), 192, 74)}
                             alt={project.title}
                             width={96}
                             height={96}
-                            loading="eager"
+                            loading="lazy"
                             decoding="async"
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />

@@ -104,7 +104,7 @@ const VideoTestimonialCard = ({
     <motion.article
       whileHover={isPlaying ? undefined : { y: -5 }}
       transition={{ type: "spring", stiffness: 230, damping: 22 }}
-      className="group relative h-full min-h-[29rem] overflow-hidden rounded-[1.6rem] border border-white/15 bg-black shadow-[0_32px_80px_-48px_hsl(var(--foreground))]"
+      className="group relative h-full min-h-[32rem] overflow-hidden rounded-[1.6rem] border border-white/15 bg-black shadow-[0_32px_80px_-48px_hsl(var(--foreground))]"
       data-playing={isPlaying ? "true" : "false"}
     >
       <video
@@ -137,14 +137,14 @@ const VideoTestimonialCard = ({
       />
 
       <div
-        className={`absolute inset-0 transition duration-500 ${
+        className={`relative z-10 min-h-[32rem] transition duration-500 ${
           isPlaying ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,11,16,0.78)_0%,rgba(2,11,16,0.18)_34%,rgba(2,11,16,0.42)_54%,rgba(2,11,16,0.96)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#03131b] via-[#03131b]/88 to-transparent" />
 
-        <div className="relative flex h-full flex-col p-5 text-white">
+        <div className="relative flex min-h-[32rem] flex-col p-5 text-white">
           <div className="flex items-start justify-between gap-3">
             <span className="inline-flex rounded-full border border-white/25 bg-black/35 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
               Video review
@@ -156,7 +156,7 @@ const VideoTestimonialCard = ({
 
           <div className="mt-8 max-w-[92%]">
             <RatingStars rating={item.rating} inactiveClassName="text-white/28" />
-            <p className="mt-3 line-clamp-4 font-display text-xl font-semibold leading-snug text-white drop-shadow-md">
+            <p className="mt-3 break-words font-display text-lg font-semibold leading-relaxed text-white drop-shadow-md sm:text-xl">
               “{item.quote}”
             </p>
           </div>

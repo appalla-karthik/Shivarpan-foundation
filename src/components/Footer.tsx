@@ -9,9 +9,12 @@ import {
   Linkedin,
 } from "lucide-react";
 import shivarpanLogo from "@/assets/shivarpan-logo-tiny.jpg";
-import registrationImage from "@/assets/registration.jpeg";
-import footerImage from "@/assets/footer-image-optimized.jpg";
+import registrationImage from "@/assets/registration-1280.webp";
+import registrationImageSmall from "@/assets/registration-768.webp";
+import footerImage from "@/assets/footer-image-optimized-1600.webp";
+import footerImageSmall from "@/assets/footer-image-optimized-960.webp";
 import qrCodeImage from "../../foundation/static/img/qr_code.webp";
+import { donationCategories } from "@/data/donationCategories";
 import { aboutContent } from "@/data/siteContent";
 
 const socialLinks = [
@@ -53,15 +56,17 @@ const governanceLinks = [
 const Footer = () => {
   return (
     <>
-    <section className="bg-white pb-6 pt-12 sm:pb-8 sm:pt-16">
+    <section className="bg-white pb-6 pt-12 [content-visibility:auto] [contain-intrinsic-size:auto_760px] sm:pb-8 sm:pt-16">
       <div className="container mx-auto px-4 sm:px-6">
         <img
           src={registrationImage}
+          srcSet={`${registrationImageSmall} 768w, ${registrationImage} 1280w`}
+          sizes="(max-width: 768px) 100vw, 1280px"
           alt="Shivarpan Foundation registration and certification details"
           width={1600}
           height={900}
-          loading="eager"
-          decoding="auto"
+          loading="lazy"
+          decoding="async"
           className="mx-auto w-full max-w-[86rem] scale-[1.08] object-contain"
         />
       </div>
@@ -74,11 +79,13 @@ const Footer = () => {
       >
         <img
           src={footerImage}
+          srcSet={`${footerImageSmall} 960w, ${footerImage} 1600w`}
+          sizes="100vw"
           alt=""
           width={1800}
           height={517}
-          loading="eager"
-          decoding="auto"
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-fill opacity-[0.78] brightness-[1.08] contrast-[1.08] saturate-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,20,28,0.38)_0%,rgba(8,20,28,0.08)_36%,rgba(8,20,28,0.34)_100%)]" />
@@ -224,6 +231,36 @@ const Footer = () => {
                   </span>
                 </a>
               </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-9 border-t border-primary-foreground/10 pt-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
+            <div className="shrink-0">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-accent">
+                Our Work
+              </p>
+              <p className="mt-1 text-xs text-primary-foreground/55">
+                Focused support where communities need it most.
+              </p>
+            </div>
+            <ul
+              className="flex min-w-0 flex-nowrap gap-2.5 overflow-x-auto pb-2 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] xl:flex-1 xl:justify-end xl:pb-0"
+              aria-label="Shivarpan Foundation areas of work"
+            >
+              {donationCategories.map((category) => (
+                <li
+                  key={category}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary-foreground/[0.045] px-3 py-2 text-[0.7rem] font-semibold leading-none text-primary-foreground/75"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 rounded-full bg-accent"
+                  />
+                  {category}
+                </li>
+              ))}
             </ul>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, CalendarDays, Play } from "lucide-react";
 import { Link } from "react-router-dom";
-import { assetUrl } from "@/lib/api";
+import { assetUrl, optimizedImageUrl } from "@/lib/api";
 import type { ImpactVideoPayload } from "@/types/content";
 
 interface FeaturedVideoTeaserProps {
@@ -92,8 +92,12 @@ const formatVideoDate = (value: string | null) => {
   }).format(date);
 };
 
-const thumbnailUrl = (video: ImpactVideoPayload) =>
-  assetUrl(video.effective_thumbnail_url || video.thumbnail?.url) || "/placeholder.svg";
+const thumbnailUrl = (video: ImpactVideoPayload, width = 1280) =>
+  optimizedImageUrl(
+    video.effective_thumbnail_url || video.thumbnail?.url,
+    width,
+    78,
+  ) || "/placeholder.svg";
 
 const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
   const orderedVideos = useMemo(
@@ -419,7 +423,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                       >
                         <span className="relative aspect-video overflow-hidden rounded-xl bg-black">
                           <img
-                            src={thumbnailUrl(video)}
+                            src={thumbnailUrl(video, 240)}
                             alt=""
                             aria-hidden="true"
                             className="h-full w-full object-cover opacity-[0.88] transition duration-500 group-hover/item:scale-105"

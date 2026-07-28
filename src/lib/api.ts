@@ -153,6 +153,26 @@ export const assetUrl = (path?: string | null) => {
   return `${origin}/${sanitizedPath.replace(/^\/+/, "")}`;
 };
 
+export const optimizedImageUrl = (
+  path?: string | null,
+  width = 960,
+  quality = 78,
+) => {
+  const resolved = assetUrl(path);
+  if (!resolved || !/\/api\/media-assets\/\d+\/file\/(?:\?|$)/i.test(resolved)) {
+    return resolved;
+  }
+
+  try {
+    const url = new URL(resolved);
+    url.searchParams.set("w", String(Math.min(1920, Math.max(32, Math.round(width)))));
+    url.searchParams.set("q", String(Math.min(90, Math.max(40, Math.round(quality)))));
+    return url.toString();
+  } catch {
+    return resolved;
+  }
+};
+
 export const isApiUnavailableError = (error: unknown) =>
   error instanceof Error && error.name === "ApiUnavailableError";
 

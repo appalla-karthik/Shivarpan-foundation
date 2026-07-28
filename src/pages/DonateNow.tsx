@@ -11,13 +11,13 @@ import {
   mapRecentProjectsFromApi,
   type RecentProjectsApiItem,
 } from "@/data/recentProjects";
+import { donationCategories } from "@/data/donationCategories";
 import { useToast } from "@/hooks/use-toast";
 import { getJson, postJson, reportApiError } from "@/lib/api";
 
 const presetAmounts = [500, 1000, 2500, 5000];
 const maximumDonationAmount = 500_000;
 const donationModes = ["one_time", "monthly"] as const;
-const donationCategories = ["General Support", "Healthcare", "Education", "Food Support", "Environment", "Elderly Support", "Disability Assistance"] as const;
 
 type DonationMode = (typeof donationModes)[number];
 

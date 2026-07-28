@@ -55,12 +55,14 @@ export default defineConfig(() => ({
             if (normalizedId.includes('/react-router') || normalizedId.includes('/@remix-run/router/')) {
               return 'router';
             }
-            if (
-              normalizedId.includes('/framer-motion/') ||
-              normalizedId.includes('/lucide-react/') ||
-              normalizedId.includes('/@radix-ui/')
-            ) {
-              return 'ui';
+            if (normalizedId.includes('/framer-motion/')) {
+              return 'motion';
+            }
+            if (normalizedId.includes('/lucide-react/')) {
+              return 'icons';
+            }
+            if (normalizedId.includes('/@radix-ui/')) {
+              return 'radix';
             }
             if (
               normalizedId.includes('/react/') ||
@@ -70,7 +72,6 @@ export default defineConfig(() => ({
             ) {
               return 'vendor';
             }
-            return 'vendor';
           }
         },
         chunkFileNames: 'assets/[name]-[hash].js',

@@ -89,12 +89,16 @@ const AppRoutes = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    void postJson("analytics/page-view/", {
-      path: location.pathname,
-      full_path: `${location.pathname}${location.search}`,
-    }).catch(() => {
-      // Analytics must never interrupt page navigation.
-    });
+    const timerId = window.setTimeout(() => {
+      void postJson("analytics/page-view/", {
+        path: location.pathname,
+        full_path: `${location.pathname}${location.search}`,
+      }).catch(() => {
+        // Analytics must never interrupt page navigation.
+      });
+    }, 4000);
+
+    return () => window.clearTimeout(timerId);
   }, [location.pathname, location.search]);
 
   return (

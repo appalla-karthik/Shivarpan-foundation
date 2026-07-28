@@ -69,6 +69,7 @@ describe("TestimonialsCarousel", () => {
             monogram: "VR",
             glow: "from-primary/20 to-transparent",
             rating: 3,
+            photoUrl: "/video-reviewer.jpg",
             media: {
               url: "/testimonial.mp4",
               media_type: "video",
@@ -80,6 +81,12 @@ describe("TestimonialsCarousel", () => {
     );
 
     expect(screen.getByLabelText("3 out of 5 stars")).toBeInTheDocument();
+    expect(
+      screen.getByText("“The field team made a visible difference.”"),
+    ).not.toHaveClass("line-clamp-4");
+    expect(
+      screen.getByRole("img", { name: "Video Reviewer" }),
+    ).toHaveAttribute("src", "/video-reviewer.jpg");
     const playButton = screen.getByRole("button", {
       name: "Play Video Reviewer testimonial video",
     });

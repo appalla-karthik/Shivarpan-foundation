@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import tempfile
 
 from django.core.exceptions import ValidationError
@@ -61,6 +62,45 @@ class TestimonialMediaTests(TestCase):
             MediaAsset.MediaType.VIDEO,
         )
         self.assertEqual(testimonial.media.category, "Testimonials")
+
+    def test_admin_direct_profile_photo_upload_creates_image_asset(self):
+        one_pixel_png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMA"
+            "ASsJTYQAAAAASUVORK5CYII="
+        )
+        form = TestimonialAdminForm(
+            data={
+                "name": "Ananya Mehta",
+                "designation": "Community Volunteer",
+                "organization": "Shivarpan Foundation",
+                "quote": "The team created a meaningful impact.",
+                "rating": 5,
+                "is_approved": True,
+                "is_hidden": False,
+            },
+            files={
+                "profile_photo_upload": SimpleUploadedFile(
+                    "ananya.png",
+                    one_pixel_png,
+                    content_type="image/png",
+                )
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        testimonial = form.save(commit=False)
+        testimonial_admin = TestimonialAdmin(Testimonial, admin_site)
+        testimonial_admin.save_model(
+            RequestFactory().post("/admin/"),
+            testimonial,
+            form,
+            change=False,
+        )
+
+        testimonial.refresh_from_db()
+        self.assertIsNotNone(testimonial.photo)
+        self.assertEqual(testimonial.photo.media_type, MediaAsset.MediaType.IMAGE)
+        self.assertEqual(testimonial.photo.category, "Testimonials")
 
     def test_public_api_exposes_approved_video_review(self):
         video_asset = MediaAsset.objects.create(
