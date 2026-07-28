@@ -161,41 +161,44 @@ const VideoTestimonialCard = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={playVideo}
-            className="group/play mt-5 inline-flex w-fit items-center gap-3 rounded-full border border-white/25 bg-white/12 py-2 pl-2 pr-4 text-xs font-semibold text-white backdrop-blur-md transition duration-300 hover:border-accent hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            aria-label={`Play ${item.name} testimonial video`}
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#082c3b] shadow-lg transition group-hover/play:scale-105">
-              <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
-            </span>
-            {hasStarted ? "Continue review" : "Play review"}
-          </button>
+          <div className="mt-auto">
+            <button
+              type="button"
+              onClick={playVideo}
+              className="group/play inline-flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#f5a13f]/80 bg-[#f5a13f] px-4 py-3 text-sm font-semibold text-[#082c3b] shadow-[0_14px_34px_-20px_rgba(245,161,63,0.95)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              aria-label={`Play ${item.name} testimonial video`}
+            >
+              <Play
+                className="h-4 w-4 transition group-hover/play:scale-110"
+                fill="currentColor"
+              />
+              {hasStarted ? "Continue review" : "Play review"}
+            </button>
 
-          <div className="mt-auto flex items-center gap-3 border-t border-white/16 pt-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/25 bg-white/12 text-xs font-semibold text-white">
-              {item.photoUrl ? (
-                <img
-                  src={item.photoUrl}
-                  alt={item.name}
-                  width={44}
-                  height={44}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                item.monogram
-              )}
+            <div className="mt-4 flex items-center gap-3 border-t border-white/16 pt-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/25 bg-white/12 text-xs font-semibold text-white">
+                {item.photoUrl ? (
+                  <img
+                    src={item.photoUrl}
+                    alt={item.name}
+                    width={44}
+                    height={44}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  item.monogram
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{item.name}</p>
+                <p className="truncate text-xs text-white/62">{item.role}</p>
+              </div>
+              <span className="hidden shrink-0 rounded-full border border-accent/40 bg-accent/12 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#ffc278] 2xl:inline-flex">
+                {item.tag}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{item.name}</p>
-              <p className="truncate text-xs text-white/62">{item.role}</p>
-            </div>
-            <span className="hidden shrink-0 rounded-full border border-accent/40 bg-accent/12 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#ffc278] 2xl:inline-flex">
-              {item.tag}
-            </span>
           </div>
         </div>
       </div>

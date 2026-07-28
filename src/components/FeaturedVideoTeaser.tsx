@@ -342,13 +342,16 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                 <button
                   type="button"
                   onClick={() => void playInlineVideo()}
-                  className="absolute left-1/2 top-[30%] grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-20 sm:w-20 lg:top-[36%]"
+                  className="absolute left-1/2 top-[30%] z-20 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-20 sm:w-20 lg:top-[36%]"
                   aria-label={`${hasStarted ? "Resume" : "Play"} ${activeVideo.title}`}
                 >
-                  <Play className="ml-1 h-6 w-6 sm:h-7 sm:w-7" fill="currentColor" />
+                  <Play
+                    className="pointer-events-none ml-1 h-6 w-6 sm:h-7 sm:w-7"
+                    fill="currentColor"
+                  />
                 </button>
 
-                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 lg:p-8">
+                <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeVideo.id}
@@ -379,7 +382,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                       <button
                         type="button"
                         onClick={() => void playInlineVideo()}
-                        className="mt-5 inline-flex w-fit items-center gap-3 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] shadow-[0_14px_32px_-16px_rgba(245,161,63,0.9)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-6"
+                        className="mt-5 inline-flex w-fit cursor-pointer touch-manipulation items-center gap-3 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] shadow-[0_14px_32px_-16px_rgba(245,161,63,0.9)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-6"
                         aria-label={`${hasStarted ? "Continue" : "Watch"} ${activeVideo.title}`}
                       >
                         <Play className="h-4 w-4" fill="currentColor" />
