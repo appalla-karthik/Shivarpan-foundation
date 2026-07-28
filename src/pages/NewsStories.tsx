@@ -584,7 +584,7 @@
                 </div>
               </motion.article>
 
-              <div className="grid gap-4 lg:col-span-5">
+              <div className="grid content-start gap-4 lg:col-span-5">
                 {supportStories.map((story, index) => (
                   <motion.article
                     key={story.title}
@@ -633,37 +633,54 @@
                   </motion.article>
                 ))}
 
-                <motion.article
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-8%" }}
-                  transition={{ duration: 0.55, delay: 0.12 }}
-                  className="rounded-[1.9rem] border border-border/80 bg-foreground p-5 text-primary-foreground shadow-[0_24px_70px_-52px_hsl(var(--foreground))]"
-                >
+              </div>
+            </div>
+
+            <motion.aside
+              initial={{ opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-8%" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="relative mt-7 overflow-hidden rounded-[2rem] border border-border/80 bg-foreground px-5 py-6 text-primary-foreground shadow-[0_28px_80px_-58px_hsl(var(--foreground))] md:px-7 md:py-7"
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-primary/20 blur-3xl"
+              />
+              <div className="relative grid gap-6 lg:grid-cols-[minmax(230px,0.75fr)_minmax(0,2.25fr)] lg:items-center">
+                <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">
                     Story Blueprint
                   </p>
-                  <h3 className="mt-2 font-display text-2xl font-semibold leading-tight">
-                    Why this section reads differently
+                  <h3 className="mt-2 max-w-sm font-display text-2xl font-semibold leading-tight md:text-3xl">
+                    Every dispatch earns the reader&apos;s trust.
                   </h3>
-                  <div className="mt-5 space-y-4">
-                    {storyEditorialPillars.map((pillar) => (
-                      <div
-                        key={pillar.title}
-                        className="rounded-[1.2rem] border border-primary-foreground/12 bg-primary-foreground/6 p-4"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
-                          {pillar.title}
-                        </p>
-                        <p className="mt-2 text-sm leading-relaxed text-primary-foreground/82">
-                          {pillar.detail}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.article>
+                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-primary-foreground/66">
+                    Clear context, verified outcomes, and human detail make each
+                    field story useful—not just memorable.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {storyEditorialPillars.map((pillar, index) => (
+                    <div
+                      key={pillar.title}
+                      className="group relative min-h-36 rounded-[1.35rem] border border-primary-foreground/14 bg-primary-foreground/[0.055] p-4 transition duration-300 hover:-translate-y-0.5 hover:border-accent/45 hover:bg-primary-foreground/[0.085]"
+                    >
+                      <span className="text-[10px] font-semibold tracking-[0.18em] text-primary-foreground/40">
+                        0{index + 1}
+                      </span>
+                      <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+                        {pillar.title}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-primary-foreground/76">
+                        {pillar.detail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </motion.aside>
 
             <ImpactVideoSection videos={impactVideos} />
 
