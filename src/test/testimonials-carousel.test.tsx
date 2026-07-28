@@ -52,9 +52,11 @@ describe("TestimonialsCarousel", () => {
       />,
     );
 
-    expect(screen.getByText(/A genuine community review\./)).toBeInTheDocument();
+    const quote = screen.getByText(/A genuine community review\./);
+    expect(quote).toBeInTheDocument();
     expect(screen.getByText("Review Person")).toBeInTheDocument();
     expect(screen.getByLabelText("4 out of 5 stars")).toBeInTheDocument();
+    expect(quote.closest('[aria-roledescription="slide"]')).toHaveClass("pr-4");
   });
 
   it("switches a video testimonial from its review overlay to full-card playback", async () => {

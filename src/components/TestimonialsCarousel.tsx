@@ -290,13 +290,13 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
         className="overflow-hidden px-1 sm:px-1.5"
         aria-roledescription="carousel"
       >
-        <div className="flex gap-4 md:gap-5">
+        <div className="flex">
           {safeItems.map((item, index) => {
             const videoKey = `${item.name}-${index}`;
             return (
               <div
                 key={videoKey}
-                className="min-w-0 flex-[0_0_calc(100%-0.75rem)] md:flex-[0_0_calc(50%-0.625rem)] xl:flex-[0_0_calc(33.333%-0.875rem)] 2xl:flex-[0_0_calc(25%-0.9375rem)]"
+                className="min-w-0 flex-[0_0_100%] pr-4 md:flex-[0_0_50%] md:pr-5 xl:flex-[0_0_33.333%] 2xl:flex-[0_0_25%]"
                 role="group"
                 aria-roledescription="slide"
                 aria-label={`${index + 1} of ${safeItems.length}`}

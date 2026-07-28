@@ -89,9 +89,11 @@ describe("FeaturedVideoTeaser", () => {
       ).toBeInTheDocument(),
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Play Second field story" }),
-    );
+    const centeredPlayButton = screen.getByRole("button", {
+      name: "Play Second field story",
+    });
+    expect(centeredPlayButton).toHaveClass("inset-x-0", "mx-auto");
+    fireEvent.click(centeredPlayButton);
 
     await waitFor(() =>
       expect(

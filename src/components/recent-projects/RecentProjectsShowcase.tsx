@@ -27,7 +27,9 @@ interface RecentProjectsShowcaseProps {
 }
 
 const getUtilizationPercent = (spent: number, budget: number) =>
-  budget > 0 ? Math.round((spent / budget) * 100) : 0;
+  budget > 0
+    ? Math.min(100, Math.max(0, Math.round((spent / budget) * 100)))
+    : 0;
 
 const RecentProjectsShowcase = ({
   projects: providedProjects,
@@ -303,18 +305,20 @@ const RecentProjectsShowcase = ({
                       </div>
                       <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
                         <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{
+                          style={{
                             width: `${getUtilizationPercent(
                               featuredProject.spent,
                               featuredProject.budget,
                             )}%`,
+                            transformOrigin: "left center",
                           }}
+                          initial={{ scaleX: 0 }}
+                          whileInView={{ scaleX: 1 }}
                           viewport={{ once: true }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-accent"
-                      />
-                    </div>
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-accent"
+                        />
+                      </div>
                       <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>{formatRecentProjectsInr(featuredProject.spent)} raised</span>
                         <span>{formatRecentProjectsInr(featuredProject.budget)} target</span>
@@ -559,8 +563,12 @@ const RecentProjectsShowcase = ({
                         </div>
                         <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                           <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${utilization}%` }}
+                            style={{
+                              width: `${utilization}%`,
+                              transformOrigin: "left center",
+                            }}
+                            initial={{ scaleX: 0 }}
+                            whileInView={{ scaleX: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.95, ease: "easeOut" }}
                             className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-accent"
@@ -690,8 +698,12 @@ const RecentProjectsShowcase = ({
 
                         <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted">
                           <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${utilization}%` }}
+                            style={{
+                              width: `${utilization}%`,
+                              transformOrigin: "left center",
+                            }}
+                            initial={{ scaleX: 0 }}
+                            whileInView={{ scaleX: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 1, ease: "easeOut" }}
                             className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-accent"

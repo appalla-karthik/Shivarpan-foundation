@@ -662,7 +662,7 @@ const Index = () => {
   return (
     <div className="overflow-hidden">
       {/* Hero */}
-      <section className="relative flex min-h-[calc(100svh-5rem)] items-center overflow-hidden md:min-h-[calc(100vh-5rem)]">
+      <section className="relative flex min-h-[calc(100svh-5rem)] flex-col justify-center overflow-hidden md:min-h-[calc(100vh-5rem)]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(circle_at_20%_80%,hsl(var(--accent)/0.25),transparent_52%),linear-gradient(135deg,hsl(var(--foreground))_0%,hsl(var(--primary))_45%,hsl(var(--accent))_100%)]" />
         {heroSlides.map((slide, index) => {
           if (!heroMediaReady && index !== activeHeroSlide) {
@@ -727,7 +727,7 @@ const Index = () => {
           ))}
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 pt-28 pb-28 sm:pb-32 md:pt-32 md:pb-36">
+        <div className="relative z-10 container mx-auto px-4 pb-8 pt-28 sm:pb-10 md:pb-36 md:pt-32">
           {latestEvent ? (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -833,9 +833,9 @@ const Index = () => {
         </div>
 
         {heroSlides.length > 0 ? (
-        <div className="absolute inset-x-0 bottom-7 z-20">
+        <div className="relative z-20 w-full pb-8 md:absolute md:inset-x-0 md:bottom-7 md:pb-0">
           <div className="container mx-auto flex flex-col gap-4 px-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex w-full items-center justify-center gap-3 lg:w-auto lg:justify-start">
               <button
                 type="button"
                 onClick={previousHeroSlide}
@@ -854,11 +854,12 @@ const Index = () => {
               </button>
               <div className="h-px w-16 bg-primary-foreground/40" />
               <span className="text-xs font-semibold uppercase tracking-[0.24em] text-primary-foreground/75">
-                Slide {String(activeHeroSlide + 1).padStart(2, "0")}
+                Slide {String(activeHeroSlide + 1).padStart(2, "0")} /{" "}
+                {String(heroSlides.length).padStart(2, "0")}
               </span>
             </div>
 
-            <div className="flex w-full flex-wrap justify-center gap-2 lg:max-w-3xl lg:justify-end">
+            <div className="flex w-full flex-nowrap justify-start gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center lg:max-w-3xl lg:justify-end">
               {heroSlides.map((slide, index) => {
                 const isVideo = isVideoMedia(slide);
                 const thumbnailUrl = (slide as { thumbUrl?: string }).thumbUrl;
@@ -1048,8 +1049,12 @@ const Index = () => {
                       </div>
                       <div className="h-3 overflow-hidden rounded-full bg-muted">
                         <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${featuredProgress}%` }}
+                          style={{
+                            width: `${featuredProgress}%`,
+                            transformOrigin: "left center",
+                          }}
+                          initial={{ scaleX: 0 }}
+                          whileInView={{ scaleX: 1 }}
                           viewport={{ once: true }}
                           transition={{ duration: 1.1, ease: "easeOut" }}
                           className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
@@ -1125,8 +1130,12 @@ const Index = () => {
                         </div>
                         <div className="h-2.5 overflow-hidden rounded-full bg-muted">
                           <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${progress}%` }}
+                            style={{
+                              width: `${progress}%`,
+                              transformOrigin: "left center",
+                            }}
+                            initial={{ scaleX: 0 }}
+                            whileInView={{ scaleX: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.9, ease: "easeOut", delay: i * 0.12 }}
                             className="h-full rounded-full bg-gradient-to-r from-primary to-accent"

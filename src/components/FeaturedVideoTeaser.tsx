@@ -346,7 +346,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                 <button
                   type="button"
                   onClick={() => void playInlineVideo()}
-                  className="absolute left-1/2 top-[27%] z-30 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:top-[30%] sm:h-20 sm:w-20 lg:top-[36%]"
+                  className="absolute inset-x-0 top-[27%] z-30 mx-auto grid h-16 w-16 -translate-y-1/2 cursor-pointer touch-manipulation place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:top-[30%] sm:h-20 sm:w-20 lg:top-[36%]"
                   aria-label={`${hasStarted ? "Resume" : "Play"} ${activeVideo.title}`}
                 >
                   <Play
