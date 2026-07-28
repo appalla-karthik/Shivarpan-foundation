@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "@/components/StaticMotion";
 import { Link } from "react-router-dom";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
@@ -23,8 +23,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedSection from "@/components/AnimatedSection";
-import FeaturedVideoTeaser from "@/components/FeaturedVideoTeaser";
-import TestimonialsCarousel from "@/components/TestimonialsCarousel";
 import campaignFood from "@/assets/campaign-food.jpg";
 import campaignEducation from "@/assets/campaign-education.jpg";
 import campaignHealth from "@/assets/campaign-health.jpg";
@@ -47,6 +45,8 @@ import type { ImpactVideoPayload } from "@/types/content";
 const ImpactCounter = lazy(() => import("@/components/ImpactCounter"));
 const CinematicImpactStory = lazy(() => import("@/components/CinematicImpactStory"));
 const ProjectFundingActions = lazy(() => import("@/components/ProjectFundingActions"));
+const FeaturedVideoTeaser = lazy(() => import("@/components/FeaturedVideoTeaser"));
+const TestimonialsCarousel = lazy(() => import("@/components/TestimonialsCarousel"));
 
 const heroStats = [
   { value: "500+", label: "Lives Transformed" },
@@ -1448,7 +1448,9 @@ const Index = () => {
       </section>
 
       {featuredImpactVideos.length > 0 ? (
-        <FeaturedVideoTeaser videos={featuredImpactVideos} />
+        <Suspense fallback={null}>
+          <FeaturedVideoTeaser videos={featuredImpactVideos} />
+        </Suspense>
       ) : null}
 
       {/* Stories */}
@@ -1622,7 +1624,9 @@ const Index = () => {
               </div>
             </AnimatedSection>
 
-            <TestimonialsCarousel items={testimonialsToShow} />
+            <Suspense fallback={null}>
+              <TestimonialsCarousel items={testimonialsToShow} />
+            </Suspense>
           </div>
         </section>
       ) : null}

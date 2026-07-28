@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/components/StaticMotion";
 import { ArrowUpRight } from "lucide-react";
 
 const whatsappLink =
@@ -62,7 +62,9 @@ const FloatingWhatsAppButton = () => {
           />
 
           <motion.span
-            className="relative hidden overflow-hidden rounded-full border border-white/90 bg-white/98 shadow-[0_18px_42px_-22px_rgba(15,23,42,0.34),0_10px_24px_-18px_rgba(37,211,102,0.2)] ring-1 ring-slate-900/5 backdrop-blur-xl sm:flex"
+            className={`relative hidden overflow-hidden rounded-full border border-white/90 bg-white/98 shadow-[0_18px_42px_-22px_rgba(15,23,42,0.34),0_10px_24px_-18px_rgba(37,211,102,0.2)] ring-1 ring-slate-900/5 backdrop-blur-xl transition-[width] duration-300 sm:flex ${
+              isExpanded ? "w-[304px]" : "w-[68px]"
+            }`}
             initial={false}
             animate={{ width: isExpanded ? 304 : 68 }}
             transition={{ type: "spring", stiffness: 340, damping: 28, mass: 0.8 }}
@@ -76,7 +78,9 @@ const FloatingWhatsAppButton = () => {
               </span>
 
               <motion.span
-                className="flex min-w-[166px] flex-1 flex-col text-left leading-none"
+                className={`flex min-w-[166px] flex-1 flex-col text-left leading-none transition duration-200 ${
+                  isExpanded ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"
+                }`}
                 initial={false}
                 animate={{
                   opacity: isExpanded ? 1 : 0,
@@ -93,7 +97,9 @@ const FloatingWhatsAppButton = () => {
               </motion.span>
 
               <motion.span
-                className="flex items-center gap-3"
+                className={`flex items-center gap-3 transition duration-200 ${
+                  isExpanded ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"
+                }`}
                 initial={false}
                 animate={{
                   opacity: isExpanded ? 1 : 0,
