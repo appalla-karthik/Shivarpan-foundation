@@ -25,10 +25,15 @@ interface TestimonialsCarouselProps {
   items: TestimonialCarouselItem[];
 }
 
-const AUTOPLAY_INTERVAL_MS = 4500;
+const AUTOPLAY_INTERVAL_MS = 3200;
 
 const normalizedRating = (rating: number) =>
   Math.min(5, Math.max(1, Math.round(Number(rating) || 5)));
+
+const videoPreviewUrl = (url: string) => {
+  if (!url || url.includes("#")) return url;
+  return `${url}#t=0.001`;
+};
 
 const RatingStars = ({
   rating,
@@ -109,11 +114,10 @@ const VideoTestimonialCard = ({
     >
       <video
         ref={videoRef}
-        src={item.media?.url}
+        src={item.media?.url ? videoPreviewUrl(item.media.url) : undefined}
         controls={hasStarted}
         preload="metadata"
         playsInline
-        poster={item.photoUrl || undefined}
         className="absolute inset-0 h-full w-full bg-black object-contain"
         aria-label={`${item.name} testimonial video`}
         onPlay={() => {
@@ -213,14 +217,14 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
     loop: safeItems.length > 1,
     slidesToScroll: 1,
     skipSnaps: false,
+    duration: 32,
   });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [snapCount, setSnapCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
   const [activeVideoKey, setActiveVideoKey] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
-  const isPaused = isHovered || isFocused || activeVideoKey !== null || reduceMotion;
+  const isPaused = isHovered || reduceMotion;
 
   const handleVideoPlayback = useCallback((videoKey: string, isPlaying: boolean) => {
     setActiveVideoKey((currentVideoKey) => {
@@ -276,12 +280,6 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
       className="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onFocusCapture={() => setIsFocused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setIsFocused(false);
-        }
-      }}
     >
       <div ref={viewportRef} className="overflow-hidden" aria-roledescription="carousel">
         <div className="flex gap-5">
@@ -375,15 +373,7 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
       </div>
 
       {snapCount > 1 ? (
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isPaused ? "bg-accent" : "animate-pulse bg-emerald-500"
-              }`}
-            />
-            {reduceMotion ? "Manual" : isPaused ? "Paused" : "Auto play"}
-          </div>
+        <div className="mt-6 flex items-center justify-end gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold tabular-nums text-muted-foreground">
               {progressLabel}

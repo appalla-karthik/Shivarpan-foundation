@@ -619,7 +619,7 @@ const Index = () => {
     }
 
     return testimonialItems.map((item, index) => {
-      const testimonialMedia = item.media || item.photo;
+      const testimonialMedia = item.media;
       const initials =
         item.name
           ?.split(" ")

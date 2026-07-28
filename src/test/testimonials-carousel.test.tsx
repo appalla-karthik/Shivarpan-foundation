@@ -94,6 +94,8 @@ describe("TestimonialsCarousel", () => {
     const videoCard = video.closest("article");
 
     expect(video).not.toHaveAttribute("controls");
+    expect(video).not.toHaveAttribute("poster");
+    expect(video).toHaveAttribute("src", "/testimonial.mp4#t=0.001");
     expect(videoCard).toHaveAttribute("data-playing", "false");
     fireEvent.click(playButton);
     fireEvent.play(video);
