@@ -17,6 +17,8 @@ type TeamMemberPayload = {
   id: number;
   state: string;
   state_label: string;
+  state_summary: string;
+  state_sort_order: number;
   name: string;
   position: string;
   photo: MediaAssetPayload | null;
@@ -26,24 +28,6 @@ type TeamMemberPayload = {
 };
 
 type TeamMembersResponse = TeamMemberPayload[] | { results?: TeamMemberPayload[] };
-
-const stateOptions = [
-  {
-    key: "andhra_pradesh",
-    label: "Andhra Pradesh",
-    summary: "Digital support and regional coordination for foundation outreach.",
-  },
-  {
-    key: "west_bengal",
-    label: "West Bengal",
-    summary: "State-level volunteer network and community support coordination.",
-  },
-  {
-    key: "uttar_pradesh",
-    label: "Uttar Pradesh",
-    summary: "Regional outreach support for programs, events, and field connections.",
-  },
-];
 
 const getStateSectionId = (state: string) => `state-${state.toLowerCase().replace(/\s+/g, "-")}`;
 
@@ -89,31 +73,43 @@ const TeamMembers = () => {
   }, []);
 
   const stateTeams = useMemo(() => {
-    const grouped = new Map<string, TeamMemberPayload[]>();
+    const grouped = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        summary: string;
+        sortOrder: number;
+        members: TeamMemberPayload[];
+      }
+    >();
 
     teamMembers
       .filter((member) => member.is_active !== false)
       .forEach((member) => {
-        const members = grouped.get(member.state) ?? [];
-        members.push(member);
-        grouped.set(member.state, members);
+        const stateKey = member.state || member.state_label;
+        const existing = grouped.get(stateKey);
+        if (existing) {
+          existing.members.push(member);
+          return;
+        }
+
+        grouped.set(stateKey, {
+          key: stateKey,
+          label: member.state_label || stateKey.replace(/_/g, " "),
+          summary:
+            member.state_summary ||
+            "State-wise team coordination and local outreach support.",
+          sortOrder: Number(member.state_sort_order) || 0,
+          members: [member],
+        });
       });
 
-    const knownTeams = stateOptions.map((state) => ({
-      ...state,
-      members: grouped.get(state.key) ?? [],
-    }));
-
-    const extraTeams = Array.from(grouped.entries())
-      .filter(([stateKey]) => !stateOptions.some((state) => state.key === stateKey))
-      .map(([stateKey, members]) => ({
-        key: stateKey,
-        label: members[0]?.state_label || stateKey.replace(/_/g, " "),
-        summary: "State-wise team coordination and local outreach support.",
-        members,
-      }));
-
-    return [...knownTeams, ...extraTeams];
+    return Array.from(grouped.values()).sort(
+      (left, right) =>
+        left.sortOrder - right.sortOrder ||
+        left.label.localeCompare(right.label),
+    );
   }, [teamMembers]);
 
   const scrollToState = (state: string) => {
@@ -161,7 +157,7 @@ const TeamMembers = () => {
                 <button
                   key={team.key}
                   type="button"
-                  onClick={() => scrollToState(team.label)}
+                  onClick={() => scrollToState(team.key)}
                   className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:bg-primary/10 hover:text-primary"
                 >
                   {team.label}
@@ -174,7 +170,7 @@ const TeamMembers = () => {
             {stateTeams.map((team, stateIndex) => (
               <AnimatedSection
                 key={team.key}
-                id={getStateSectionId(team.label)}
+                id={getStateSectionId(team.key)}
                 delay={stateIndex * 0.08}
                 className="rounded-[2rem] border border-border/80 bg-card/70 p-5 shadow-[0_26px_80px_-58px_hsl(var(--foreground))] backdrop-blur-sm sm:p-7"
               >

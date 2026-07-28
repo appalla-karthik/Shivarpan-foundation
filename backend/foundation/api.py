@@ -444,7 +444,13 @@ class TestimonialSerializer(serializers.ModelSerializer):
 
 class TeamMemberSerializer(serializers.ModelSerializer):
     photo = MediaAssetSerializer(read_only=True)
-    state_label = serializers.CharField(source="get_state_display", read_only=True)
+    state = serializers.CharField(source="state.slug", read_only=True)
+    state_label = serializers.CharField(source="state.name", read_only=True)
+    state_summary = serializers.CharField(source="state.summary", read_only=True)
+    state_sort_order = serializers.IntegerField(
+        source="state.sort_order",
+        read_only=True,
+    )
 
     class Meta:
         model = TeamMember
@@ -452,6 +458,8 @@ class TeamMemberSerializer(serializers.ModelSerializer):
             "id",
             "state",
             "state_label",
+            "state_summary",
+            "state_sort_order",
             "name",
             "position",
             "photo",
@@ -778,9 +786,13 @@ class TestimonialViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class TeamMemberViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = TeamMember.objects.filter(is_active=True).select_related("photo").order_by("state", "sort_order", "name")
+    queryset = (
+        TeamMember.objects.filter(is_active=True, state__is_active=True)
+        .select_related("state", "photo")
+        .order_by("state__sort_order", "state__name", "sort_order", "name")
+    )
     serializer_class = TeamMemberSerializer
-    filterset_fields = ["state", "is_active"]
+    filterset_fields = ["state__slug", "is_active"]
 
 
 class AwardViewSet(viewsets.ReadOnlyModelViewSet):

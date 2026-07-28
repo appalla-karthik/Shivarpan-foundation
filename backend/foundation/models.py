@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 
 from .video_utils import extract_youtube_video_id
 
@@ -254,13 +255,40 @@ class Testimonial(TimeStampedModel):
         return f"{self.name} ({self.organization})" if self.organization else self.name
 
 
-class TeamMember(TimeStampedModel):
-    class State(models.TextChoices):
-        ANDHRA_PRADESH = "andhra_pradesh", "Andhra Pradesh"
-        WEST_BENGAL = "west_bengal", "West Bengal"
-        UTTAR_PRADESH = "uttar_pradesh", "Uttar Pradesh"
+class TeamState(TimeStampedModel):
+    name = models.CharField(max_length=120, unique=True)
+    slug = models.SlugField(
+        max_length=140,
+        unique=True,
+        blank=True,
+        help_text="Stable public identifier. It is generated from the state name.",
+    )
+    summary = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Short public description shown above this state's team members.",
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
-    state = models.CharField(max_length=80, choices=State.choices)
+    class Meta:
+        ordering = ["sort_order", "name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class TeamMember(TimeStampedModel):
+    state = models.ForeignKey(
+        TeamState,
+        on_delete=models.PROTECT,
+        related_name="members",
+    )
     name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
     photo = models.ForeignKey(
@@ -271,10 +299,10 @@ class TeamMember(TimeStampedModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["state", "sort_order", "name"]
+        ordering = ["state__sort_order", "state__name", "sort_order", "name"]
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.get_state_display()}"
+        return f"{self.name} - {self.state.name}"
 
 
 class Project(PublishableModel, SeoFields):

@@ -41,6 +41,7 @@ from foundation.models import (
     Subscriber,
     Tag,
     TeamMember,
+    TeamState,
     Testimonial,
     UpcomingEvent,
     Visitor,
@@ -576,12 +577,27 @@ class TestimonialAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+@admin.register(TeamState, site=admin_site)
+class TeamStateAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "member_count", "sort_order", "is_active", "updated_at")
+    list_editable = ("sort_order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "slug", "summary")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("sort_order", "name")
+    fields = ("name", "slug", "summary", "sort_order", "is_active")
+
+    @admin.display(description="Members")
+    def member_count(self, obj):
+        return obj.members.count()
+
+
 @admin.register(TeamMember, site=admin_site)
 class TeamMemberAdmin(admin.ModelAdmin):
     list_display = ("name", "state", "position", "is_active", "sort_order", "updated_at")
     list_filter = ("state", "is_active")
     search_fields = ("name", "position", "note")
-    autocomplete_fields = ("photo",)
+    autocomplete_fields = ("state", "photo")
     fields = ("state", "name", "position", "photo", "note", "sort_order", "is_active")
 
 
