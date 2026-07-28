@@ -272,9 +272,9 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-[#123f50]/40 bg-[#061f2b] shadow-[0_38px_90px_-48px_rgba(4,31,43,0.9)] md:rounded-[2.5rem]">
+          <div className="overflow-hidden rounded-[1.6rem] border border-[#123f50]/40 bg-[#061f2b] shadow-[0_38px_90px_-48px_rgba(4,31,43,0.9)] sm:rounded-[2rem] md:rounded-[2.5rem]">
             <div
-              className="group relative aspect-[4/5] min-h-[560px] overflow-hidden bg-[#061f2b] sm:aspect-[4/3] sm:min-h-[620px] lg:aspect-video lg:min-h-0"
+              className="group relative aspect-[4/5] min-h-[34rem] overflow-hidden bg-[#061f2b] sm:aspect-[4/3] sm:min-h-[620px] lg:aspect-video lg:min-h-0"
               data-playing={isPlaying ? "true" : "false"}
             >
               <AnimatePresence mode="wait">
@@ -346,7 +346,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                 <button
                   type="button"
                   onClick={() => void playInlineVideo()}
-                  className="absolute left-1/2 top-[30%] z-20 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-20 sm:w-20 lg:top-[36%]"
+                  className="absolute left-1/2 top-[27%] z-30 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation place-items-center rounded-full border border-white/55 bg-black/25 text-white shadow-[0_16px_45px_rgba(0,0,0,0.38)] backdrop-blur-sm transition duration-300 hover:scale-110 hover:border-[#f5a13f] hover:bg-[#f5a13f] hover:text-[#102632] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:top-[30%] sm:h-20 sm:w-20 lg:top-[36%]"
                   aria-label={`${hasStarted ? "Resume" : "Play"} ${activeVideo.title}`}
                 >
                   <Play
@@ -355,7 +355,7 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                   />
                 </button>
 
-                <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8">
+                <div className="absolute inset-x-0 bottom-0 z-10 min-w-0 p-4 sm:p-6 lg:p-8">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeVideo.id}
@@ -363,9 +363,9 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="max-w-4xl text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.62)]"
+                      className="min-w-0 max-w-4xl text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.62)]"
                     >
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65">
+                      <div className="flex max-w-full flex-wrap items-center gap-x-3 gap-y-1.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-white/65 sm:gap-x-4 sm:gap-y-2 sm:text-[10px] sm:tracking-[0.18em]">
                         <span className="text-[#ffc278]">
                           {activeVideo.category || "Impact in Motion"}
                         </span>
@@ -376,20 +376,20 @@ const FeaturedVideoTeaser = ({ videos }: FeaturedVideoTeaserProps) => {
                           </span>
                         ) : null}
                       </div>
-                      <h3 className="mt-3 max-w-3xl font-display text-3xl font-bold leading-[1.05] sm:text-4xl lg:text-5xl">
+                      <h3 className="mt-2.5 max-w-full break-words font-display text-[clamp(1.55rem,6.4vw,3rem)] font-bold leading-[1.04] [overflow-wrap:anywhere] sm:mt-3 sm:max-w-3xl sm:text-4xl lg:text-5xl">
                         {activeVideo.title}
                       </h3>
-                      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:mt-4 sm:text-base">
+                      <p className="mt-2.5 max-w-full text-[13px] leading-relaxed text-white/75 sm:mt-4 sm:max-w-2xl sm:text-base">
                         {activeVideo.short_description ||
                           "Watch this story from the field and discover the people behind Shivarpan's impact."}
                       </p>
                       <button
                         type="button"
                         onClick={() => void playInlineVideo()}
-                        className="mt-5 inline-flex w-fit cursor-pointer touch-manipulation items-center gap-3 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] shadow-[0_14px_32px_-16px_rgba(245,161,63,0.9)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-6"
+                        className="relative z-30 mt-4 inline-flex min-h-12 w-fit cursor-pointer touch-manipulation items-center gap-2.5 rounded-full bg-[#f5a13f] px-5 py-3 text-sm font-semibold text-[#102632] shadow-[0_14px_32px_-16px_rgba(245,161,63,0.9)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffb45a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-6 sm:gap-3"
                         aria-label={`${hasStarted ? "Continue" : "Watch"} ${activeVideo.title}`}
                       >
-                        <Play className="h-4 w-4" fill="currentColor" />
+                        <Play className="pointer-events-none h-4 w-4" fill="currentColor" />
                         {hasStarted ? "Continue video" : "Watch video"}
                       </button>
                     </motion.div>

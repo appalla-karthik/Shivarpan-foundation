@@ -260,7 +260,11 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
 
     const timerId = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        emblaApi.scrollNext();
+        if (emblaApi.canScrollNext()) {
+          emblaApi.scrollNext();
+        } else {
+          emblaApi.scrollTo(0);
+        }
       }
     }, AUTOPLAY_INTERVAL_MS);
 
@@ -281,14 +285,18 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div ref={viewportRef} className="overflow-hidden" aria-roledescription="carousel">
-        <div className="flex gap-5">
+      <div
+        ref={viewportRef}
+        className="overflow-hidden px-1 sm:px-1.5"
+        aria-roledescription="carousel"
+      >
+        <div className="flex gap-4 md:gap-5">
           {safeItems.map((item, index) => {
             const videoKey = `${item.name}-${index}`;
             return (
               <div
                 key={videoKey}
-                className="min-w-0 flex-[0_0_100%] sm:flex-[0_0_calc(50%-0.625rem)] lg:flex-[0_0_calc(33.333%-0.875rem)] xl:flex-[0_0_calc(25%-0.9375rem)]"
+                className="min-w-0 flex-[0_0_calc(100%-0.75rem)] md:flex-[0_0_calc(50%-0.625rem)] xl:flex-[0_0_calc(33.333%-0.875rem)] 2xl:flex-[0_0_calc(25%-0.9375rem)]"
                 role="group"
                 aria-roledescription="slide"
                 aria-label={`${index + 1} of ${safeItems.length}`}
@@ -388,7 +396,14 @@ const TestimonialsCarousel = ({ items }: TestimonialsCarouselProps) => {
             </button>
             <button
               type="button"
-              onClick={() => emblaApi?.scrollNext()}
+              onClick={() => {
+                if (!emblaApi) return;
+                if (emblaApi.canScrollNext()) {
+                  emblaApi.scrollNext();
+                } else {
+                  emblaApi.scrollTo(0);
+                }
+              }}
               className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary hover:text-primary-foreground"
               aria-label="Next testimonial"
             >
