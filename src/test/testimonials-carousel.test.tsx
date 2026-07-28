@@ -84,13 +84,25 @@ describe("TestimonialsCarousel", () => {
       name: "Play Video Reviewer testimonial video",
     });
     const video = screen.getByLabelText("Video Reviewer testimonial video");
+    const videoCard = video.closest("article");
 
     expect(video).not.toHaveAttribute("controls");
+    expect(videoCard).toHaveAttribute("data-playing", "false");
     fireEvent.click(playButton);
+    fireEvent.play(video);
 
-    await waitFor(() => expect(video).toHaveAttribute("controls"));
+    await waitFor(() => {
+      expect(video).toHaveAttribute("controls");
+      expect(videoCard).toHaveAttribute("data-playing", "true");
+    });
     fireEvent.pause(video);
+    expect(videoCard).toHaveAttribute("data-playing", "false");
     expect(video).toHaveAttribute("controls");
+    expect(
+      screen.getByRole("button", {
+        name: "Play Video Reviewer testimonial video",
+      }),
+    ).toHaveTextContent("Continue review");
   });
 
   it("handles a missing runtime items value without crashing", () => {

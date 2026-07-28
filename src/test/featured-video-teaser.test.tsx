@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import FeaturedVideoTeaser from "@/components/FeaturedVideoTeaser";
 import type { ImpactVideoPayload } from "@/types/content";
 
@@ -28,6 +28,37 @@ const createVideo = (
 });
 
 describe("FeaturedVideoTeaser", () => {
+  let emitPlayerState: ((state: number) => void) | null = null;
+
+  beforeEach(() => {
+    class MockYouTubePlayer {
+      playVideo = vi.fn();
+      destroy = vi.fn();
+
+      constructor(
+        _element: HTMLElement,
+        options: {
+          events: {
+            onReady: (event: { data: number; target: MockYouTubePlayer }) => void;
+            onStateChange: (event: {
+              data: number;
+              target: MockYouTubePlayer;
+            }) => void;
+          };
+        },
+      ) {
+        emitPlayerState = (state: number) =>
+          options.events.onStateChange({ data: state, target: this });
+        options.events.onReady({ data: -1, target: this });
+      }
+    }
+
+    Object.defineProperty(window, "YT", {
+      configurable: true,
+      value: { Player: MockYouTubePlayer },
+    });
+  });
+
   it("renders a section title and supports multiple featured video selections", async () => {
     render(
       <MemoryRouter>
@@ -61,15 +92,26 @@ describe("FeaturedVideoTeaser", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Play Second field story" }),
     );
-    expect(
-      screen.getByRole("dialog", { name: "Second field story" }),
-    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Close video" }));
     await waitFor(() =>
       expect(
-        screen.queryByRole("dialog", { name: "Second field story" }),
-      ).not.toBeInTheDocument(),
+        screen.getByLabelText("Second field story YouTube video"),
+      ).toBeInTheDocument(),
     );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    const inlinePlayer = screen
+      .getByLabelText("Second field story YouTube video")
+      .closest("[data-playing]");
+    expect(inlinePlayer).toHaveAttribute("data-playing", "true");
+
+    act(() => emitPlayerState?.(2));
+
+    await waitFor(() => {
+      expect(inlinePlayer).toHaveAttribute("data-playing", "false");
+      expect(
+        screen.getByRole("button", { name: "Resume Second field story" }),
+      ).toBeInTheDocument();
+    });
   });
 });

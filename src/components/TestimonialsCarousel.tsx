@@ -74,12 +74,14 @@ const VideoTestimonialCard = ({
 }: VideoTestimonialCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (isActive) return;
     const video = videoRef.current;
     if (video && !video.paused) video.pause();
     setHasStarted(false);
+    setIsPlaying(false);
   }, [isActive]);
 
   const playVideo = async () => {
@@ -87,20 +89,23 @@ const VideoTestimonialCard = ({
     if (!video) return;
 
     setHasStarted(true);
+    setIsPlaying(true);
     onPlaybackChange(videoKey, true);
     try {
       await video.play();
     } catch {
       setHasStarted(false);
+      setIsPlaying(false);
       onPlaybackChange(videoKey, false);
     }
   };
 
   return (
     <motion.article
-      whileHover={hasStarted ? undefined : { y: -5 }}
+      whileHover={isPlaying ? undefined : { y: -5 }}
       transition={{ type: "spring", stiffness: 230, damping: 22 }}
       className="group relative h-full min-h-[29rem] overflow-hidden rounded-[1.6rem] border border-white/15 bg-black shadow-[0_32px_80px_-48px_hsl(var(--foreground))]"
+      data-playing={isPlaying ? "true" : "false"}
     >
       <video
         ref={videoRef}
@@ -111,20 +116,29 @@ const VideoTestimonialCard = ({
         poster={item.photoUrl || undefined}
         className="absolute inset-0 h-full w-full bg-black object-contain"
         aria-label={`${item.name} testimonial video`}
-        onPlay={() => onPlaybackChange(videoKey, true)}
+        onPlay={() => {
+          setHasStarted(true);
+          setIsPlaying(true);
+          onPlaybackChange(videoKey, true);
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+        }}
         onEnded={() => {
           setHasStarted(false);
+          setIsPlaying(false);
           onPlaybackChange(videoKey, false);
         }}
         onError={() => {
           setHasStarted(false);
+          setIsPlaying(false);
           onPlaybackChange(videoKey, false);
         }}
       />
 
       <div
         className={`absolute inset-0 transition duration-500 ${
-          hasStarted ? "pointer-events-none opacity-0" : "opacity-100"
+          isPlaying ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,11,16,0.78)_0%,rgba(2,11,16,0.18)_34%,rgba(2,11,16,0.42)_54%,rgba(2,11,16,0.96)_100%)]" />
@@ -156,7 +170,7 @@ const VideoTestimonialCard = ({
             <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#082c3b] shadow-lg transition group-hover/play:scale-105">
               <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
             </span>
-            Play review
+            {hasStarted ? "Continue review" : "Play review"}
           </button>
 
           <div className="mt-auto flex items-center gap-3 border-t border-white/16 pt-4">
